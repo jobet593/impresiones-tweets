@@ -1,111 +1,109 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Seguimiento de impresiones</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --color-text-primary: #111;
-      --color-text-secondary: #666;
-      --color-text-danger: #c0392b;
-      --color-background-secondary: #f5f5f5;
-      --color-border-tertiary: #e0e0e0;
-      --border-radius-md: 8px;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --color-text-primary: #f0f0f0;
-        --color-text-secondary: #aaa;
-        --color-background-secondary: #1e1e1e;
-        --color-border-tertiary: #333;
-      }
-      body { background: #121212; }
-    }
-    body { font-family: system-ui, -apple-system, sans-serif; color: var(--color-text-primary); padding: 2rem; max-width: 960px; margin: 0 auto; }
-    h1 { font-size: 1.5rem; font-weight: 600; }
-    input[type="datetime-local"], input[type="number"] {
-      background: var(--color-background-secondary);
-      border: 1px solid var(--color-border-tertiary);
-      border-radius: var(--border-radius-md);
-      padding: 8px 12px;
-      font-size: 14px;
-      color: var(--color-text-primary);
-      width: 100%;
-    }
-    button[type="submit"] {
-      background: #1D9E75;
-      color: #fff;
-      border: none;
-      border-radius: var(--border-radius-md);
-      padding: 9px 16px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    button[type="submit"]:hover { background: #178a64; }
-    details summary::-webkit-details-marker { display: none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seguimiento de impresiones</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#ffffff;
+  --text-primary:#111;
+  --text-secondary:#666;
+  --text-danger:#c0392b;
+  --bg-secondary:#f5f5f5;
+  --border:#e0e0e0;
+  --radius:8px;
+  --accent:#1D9E75;
+}
+[data-theme="dark"]{
+  --bg:#121212;
+  --text-primary:#f0f0f0;
+  --text-secondary:#aaa;
+  --bg-secondary:#1e1e1e;
+  --border:#333;
+  --accent:#5DCAA5;
+}
+body{font-family:system-ui,-apple-system,sans-serif;color:var(--text-primary);background:var(--bg);padding:2rem;max-width:960px;margin:0 auto;transition:background .2s,color .2s;}
+h1{font-size:1.5rem;font-weight:600;}
+select,input[type="date"],input[type="number"]{
+  background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);
+  padding:8px 12px;font-size:14px;color:var(--text-primary);width:100%;
+}
+button[type="submit"]{background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:9px 16px;font-size:14px;cursor:pointer;}
+button[type="submit"]:hover{opacity:.9;}
+details summary::-webkit-details-marker{display:none;}
+.theme-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
+.theme-switch{width:42px;height:24px;border-radius:12px;background:var(--border);position:relative;transition:background .2s;flex-shrink:0;}
+.theme-switch::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+[data-theme="dark"] .theme-switch{background:var(--accent);}
+[data-theme="dark"] .theme-switch::after{transform:translateX(18px);}
+</style>
 </head>
 <body>
 
-<div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:1.5rem;">
+<div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; gap:1rem;">
   <div>
     <h1>Seguimiento de impresiones</h1>
-    <p style="font-size:13px; color:var(--color-text-secondary); margin:4px 0 0;">v5 · datos guardados localmente en el navegador</p>
+    <p id="sync-status" style="font-size:13px; color:var(--text-secondary); margin:4px 0 0;">v6 · conectado a la API de X</p>
+  </div>
+  <div class="theme-toggle" id="theme-toggle">
+    <span style="font-size:13px; color:var(--text-secondary);" id="theme-label">Modo claro</span>
+    <div class="theme-switch"></div>
   </div>
 </div>
 
 <div id="tweets-container"></div>
 
 <template id="tweet-section-template">
-  <section class="tweet-section" style="margin-bottom:2.5rem; padding-bottom:2rem; border-bottom:0.5px solid var(--color-border-tertiary);">
+  <section class="tweet-section" style="margin-bottom:2.5rem; padding-bottom:2rem; border-bottom:0.5px solid var(--border);">
     <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:1rem;">
       <div class="avatar" style="width:40px; height:40px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-weight:500; font-size:14px;"></div>
       <div style="min-width:0;">
         <p class="author" style="font-weight:500; font-size:15px; margin:0;"></p>
-        <p class="text" style="font-size:14px; color:var(--color-text-secondary); margin:2px 0 0; line-height:1.5;"></p>
+        <p class="text" style="font-size:14px; color:var(--text-secondary); margin:2px 0 0; line-height:1.5;"></p>
       </div>
-      <span class="sim-badge" style="display:none; font-size:11px; padding:3px 8px; border-radius:var(--border-radius-md); background:var(--color-background-secondary); color:var(--color-text-secondary); margin-left:auto; flex-shrink:0; white-space:nowrap;">Datos de ejemplo</span>
+      <span class="auto-badge" style="font-size:11px; padding:3px 8px; border-radius:var(--radius); background:var(--bg-secondary); color:var(--accent); margin-left:auto; flex-shrink:0; white-space:nowrap; border:1px solid var(--accent);">● Automático</span>
     </div>
 
     <div class="metrics-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:0.75rem;">
-      <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:1rem;">
-        <p style="font-size:13px; color:var(--color-text-secondary); margin:0 0 4px;">Impresiones actuales</p>
+      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
+        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Impresiones actuales</p>
         <p class="metric-current" style="font-size:24px; font-weight:500; margin:0;">—</p>
       </div>
-      <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:1rem;">
-        <p style="font-size:13px; color:var(--color-text-secondary); margin:0 0 4px;">Hoy</p>
+      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
+        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Hoy</p>
         <p class="metric-today" style="font-size:24px; font-weight:500; margin:0;">—</p>
       </div>
-      <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:1rem;">
-        <p style="font-size:13px; color:var(--color-text-secondary); margin:0 0 4px;">Incremento total</p>
+      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
+        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Incremento total</p>
         <p class="metric-total-increase" style="font-size:24px; font-weight:500; margin:0;">—</p>
       </div>
-      <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:1rem;">
-        <p style="font-size:13px; color:var(--color-text-secondary); margin:0 0 4px;">Promedio por hora</p>
+      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
+        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Promedio por hora</p>
         <p class="metric-avg-hour" style="font-size:24px; font-weight:500; margin:0;">—</p>
       </div>
-      <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:1rem;">
-        <p style="font-size:13px; color:var(--color-text-secondary); margin:0 0 4px;">Hora pico</p>
+      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
+        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Hora pico</p>
         <p class="metric-peak-hour" style="font-size:24px; font-weight:500; margin:0;">—</p>
       </div>
-      <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:1rem;">
-        <p style="font-size:13px; color:var(--color-text-secondary); margin:0 0 4px;">Promedio por día</p>
+      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
+        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Promedio por día</p>
         <p class="metric-avg-day" style="font-size:24px; font-weight:500; margin:0;">—</p>
       </div>
-      <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:1rem;">
-        <p style="font-size:13px; color:var(--color-text-secondary); margin:0 0 4px;">Promedio por semana</p>
+      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
+        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Promedio por semana</p>
         <p class="metric-avg-week" style="font-size:24px; font-weight:500; margin:0;">—</p>
       </div>
     </div>
-    <p class="avg-disclaimer" style="font-size:12px; color:var(--color-text-secondary); margin:0 0 1.5rem;"></p>
+    <p class="avg-disclaimer" style="font-size:12px; color:var(--text-secondary); margin:0 0 1.5rem;"></p>
+    <p class="empty-state" style="font-size:13px; color:var(--text-secondary); margin:0 0 1.5rem; display:none;">Aún no hay lecturas para este tweet. Espera al próximo ciclo automático (cada 30 min) o agrega una manualmente abajo.</p>
 
-    <div class="tab-bar" style="display:flex; gap:4px; margin-bottom:1rem; border-bottom:0.5px solid var(--color-border-tertiary); overflow-x:auto;">
-      <button type="button" class="tab-btn tab-btn-active" data-tab="bars" style="border:none; background:none; padding:8px 4px; margin-right:16px; font-size:14px; color:var(--color-text-primary); cursor:pointer; border-bottom:2px solid var(--color-text-primary); white-space:nowrap;">Incrementos por hora</button>
-      <button type="button" class="tab-btn" data-tab="heatmap" style="border:none; background:none; padding:8px 4px; margin-right:16px; font-size:14px; color:var(--color-text-secondary); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap;">Heatmap</button>
-      <button type="button" class="tab-btn" data-tab="daily" style="border:none; background:none; padding:8px 4px; margin-right:16px; font-size:14px; color:var(--color-text-secondary); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap;">Por día</button>
+    <div class="tab-bar" style="display:flex; gap:4px; margin-bottom:1rem; border-bottom:0.5px solid var(--border); overflow-x:auto;">
+      <button type="button" class="tab-btn tab-btn-active" data-tab="bars" style="border:none; background:none; padding:8px 4px; margin-right:16px; font-size:14px; color:var(--text-primary); cursor:pointer; border-bottom:2px solid var(--text-primary); white-space:nowrap;">Incrementos por hora</button>
+      <button type="button" class="tab-btn" data-tab="heatmap" style="border:none; background:none; padding:8px 4px; margin-right:16px; font-size:14px; color:var(--text-secondary); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap;">Heatmap</button>
+      <button type="button" class="tab-btn" data-tab="daily" style="border:none; background:none; padding:8px 4px; margin-right:16px; font-size:14px; color:var(--text-secondary); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap;">Por día</button>
     </div>
 
     <div class="tab-panel" data-panel="bars" style="margin:0 0 1.5rem; position:relative; height:220px;">
@@ -113,54 +111,54 @@
     </div>
 
     <div class="tab-panel" data-panel="heatmap" style="display:none; margin-bottom:1.5rem;">
-      <p style="font-size:13px; color:var(--color-text-secondary); margin:0 0 8px;">Impresiones estimadas por día y hora</p>
+      <p style="font-size:13px; color:var(--text-secondary); margin:0 0 8px;">Impresiones estimadas por día y hora</p>
       <div style="overflow-x:auto;"><div class="heatmap-grid"></div></div>
-      <p style="font-size:13px; color:var(--color-text-secondary); margin:1.5rem 0 8px;">Total combinado por hora del día</p>
+      <p style="font-size:13px; color:var(--text-secondary); margin:1.5rem 0 8px;">Total combinado por hora del día</p>
       <div style="overflow-x:auto;"><div class="heatmap-row"></div></div>
     </div>
 
     <div class="tab-panel" data-panel="daily" style="display:none; margin-bottom:1.5rem;">
       <table style="width:100%; font-size:13px; table-layout:fixed;">
         <colgroup><col style="width:40%"><col style="width:30%"><col style="width:30%"></colgroup>
-        <thead>
-          <tr style="text-align:left; color:var(--color-text-secondary);">
-            <th style="padding:6px 0; font-weight:400;">Día</th>
-            <th style="padding:6px 0; font-weight:400; text-align:right;">Impresiones ganadas</th>
-            <th style="padding:6px 0; font-weight:400; text-align:right;">Promedio /hora</th>
-          </tr>
-        </thead>
+        <thead><tr style="text-align:left; color:var(--text-secondary);">
+          <th style="padding:6px 0; font-weight:400;">Día</th>
+          <th style="padding:6px 0; font-weight:400; text-align:right;">Impresiones ganadas</th>
+          <th style="padding:6px 0; font-weight:400; text-align:right;">Promedio /hora</th>
+        </tr></thead>
         <tbody class="daily-body"></tbody>
       </table>
     </div>
 
     <details style="margin-bottom:1rem;">
-      <summary style="cursor:pointer; font-size:14px; color:var(--color-text-secondary); padding:8px 0;">Ver historial de lecturas</summary>
+      <summary style="cursor:pointer; font-size:14px; color:var(--text-secondary); padding:8px 0;">Ver historial de lecturas</summary>
       <table style="width:100%; font-size:13px; margin-top:8px; table-layout:fixed;">
-        <colgroup><col style="width:55%"><col style="width:25%"><col style="width:20%"></colgroup>
-        <thead>
-          <tr style="text-align:left; color:var(--color-text-secondary);">
-            <th style="padding:6px 0; font-weight:400;">Fecha y hora</th>
-            <th style="padding:6px 0; font-weight:400; text-align:right;">Impresiones</th>
-            <th style="padding:6px 0; font-weight:400; text-align:right;">Incremento</th>
-          </tr>
-        </thead>
+        <colgroup><col style="width:45%"><col style="width:20%"><col style="width:20%"><col style="width:15%"></colgroup>
+        <thead><tr style="text-align:left; color:var(--text-secondary);">
+          <th style="padding:6px 0; font-weight:400;">Fecha y hora</th>
+          <th style="padding:6px 0; font-weight:400; text-align:right;">Impresiones</th>
+          <th style="padding:6px 0; font-weight:400; text-align:right;">Incremento</th>
+          <th style="padding:6px 0; font-weight:400; text-align:right;">Origen</th>
+        </tr></thead>
         <tbody class="history-body"></tbody>
       </table>
     </details>
 
     <form class="add-reading-form" style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
-      <div style="flex:1; min-width:160px;">
-        <label style="font-size:13px; color:var(--color-text-secondary); display:block; margin-bottom:4px;">Fecha y hora</label>
-        <input type="datetime-local" class="input-datetime" required>
+      <div style="flex:1; min-width:140px;">
+        <label style="font-size:13px; color:var(--text-secondary); display:block; margin-bottom:4px;">Fecha</label>
+        <input type="date" class="input-date" required>
       </div>
       <div style="flex:1; min-width:120px;">
-        <label style="font-size:13px; color:var(--color-text-secondary); display:block; margin-bottom:4px;">Impresiones</label>
+        <label style="font-size:13px; color:var(--text-secondary); display:block; margin-bottom:4px;">Hora</label>
+        <select class="input-time" required></select>
+      </div>
+      <div style="flex:1; min-width:120px;">
+        <label style="font-size:13px; color:var(--text-secondary); display:block; margin-bottom:4px;">Impresiones</label>
         <input type="number" class="input-impressions" min="0" required placeholder="ej. 860">
       </div>
       <button type="submit">+ Agregar lectura</button>
     </form>
-    <p class="form-error" style="color:var(--color-text-danger); font-size:13px; margin:8px 0 0; display:none;"></p>
-    <button type="button" class="reset-btn" style="margin-top:12px; font-size:12px; color:var(--color-text-secondary); background:none; border:none; padding:4px 0; cursor:pointer; text-decoration:underline;">Restaurar datos de ejemplo</button>
+    <p class="form-error" style="color:var(--text-danger); font-size:13px; margin:8px 0 0; display:none;"></p>
   </section>
 </template>
 
@@ -168,76 +166,61 @@
 (function(){
   var TWEETS = [
     {
-      id: 'encendedor',
+      id: 'encendedor_v2',
       author: 'Un encendedor blanco. @un_encendedor',
-      text: '"Ahora no somos más que dos extraños que se saben de memoria los puntos exactos dónde conectan sus lunares y sus vacíos."',
-      avatarLetters: 'UE', avatarColorBg: '#E6F1FB', avatarColorText: '#0C447C',
-      simulated: false,
-      seedReadings: [
-        {ts:'2026-06-12T20:00',impressions:800},{ts:'2026-06-13T01:29',impressions:803},
-        {ts:'2026-06-13T02:20',impressions:804},{ts:'2026-06-13T03:24',impressions:805},
-        {ts:'2026-06-13T04:31',impressions:806},{ts:'2026-06-13T04:46',impressions:807},
-        {ts:'2026-06-13T06:29',impressions:808},{ts:'2026-06-13T09:01',impressions:810},
-        {ts:'2026-06-13T09:35',impressions:813},{ts:'2026-06-13T11:31',impressions:814},
-        {ts:'2026-06-13T12:08',impressions:815},{ts:'2026-06-13T14:56',impressions:816},
-        {ts:'2026-06-13T18:56',impressions:817},{ts:'2026-06-14T01:11',impressions:820},
-        {ts:'2026-06-14T02:57',impressions:821},{ts:'2026-06-14T04:24',impressions:822},
-        {ts:'2026-06-14T08:20',impressions:824},{ts:'2026-06-14T08:58',impressions:825},
-        {ts:'2026-06-14T11:15',impressions:826},{ts:'2026-06-14T13:52',impressions:828},
-        {ts:'2026-06-14T14:43',impressions:829},{ts:'2026-06-14T21:39',impressions:832},
-        {ts:'2026-06-15T00:20',impressions:836},{ts:'2026-06-15T04:12',impressions:837},
-        {ts:'2026-06-15T04:38',impressions:838},{ts:'2026-06-15T08:56',impressions:839},
-        {ts:'2026-06-15T10:01',impressions:842},{ts:'2026-06-15T11:09',impressions:843},
-        {ts:'2026-06-16T02:41',impressions:844},{ts:'2026-06-16T03:41',impressions:846},
-        {ts:'2026-06-16T06:40',impressions:847},{ts:'2026-06-16T15:03',impressions:848},
-        {ts:'2026-06-16T17:44',impressions:849},{ts:'2026-06-16T21:56',impressions:853},
-        {ts:'2026-06-17T01:33',impressions:855},{ts:'2026-06-17T10:00',impressions:857}
-      ]
+      text: '"¿Para qué seguir construyendo sobre un suelo que ya está cediendo?"',
+      avatarLetters:'UE', avatarColorBg:'#E6F1FB', avatarColorText:'#0C447C'
     },
     {
       id: 'nubes',
       author: 'Dr. Manhattan @soyjobet',
       text: '"Qué bonitas son las nubes y más aún cuando tienen forma de gato."',
-      avatarLetters: 'DM', avatarColorBg: '#EEEDFE', avatarColorText: '#26215C',
-      simulated: true,
-      seedReadings: [
-        {ts:'2026-06-12T12:00',impressions:2770},{ts:'2026-06-12T16:14',impressions:2772},
-        {ts:'2026-06-12T19:48',impressions:2779},{ts:'2026-06-12T19:58',impressions:2783},
-        {ts:'2026-06-12T21:55',impressions:2786},{ts:'2026-06-13T01:30',impressions:2787},
-        {ts:'2026-06-13T02:42',impressions:2788},{ts:'2026-06-13T06:29',impressions:2790},
-        {ts:'2026-06-13T14:17',impressions:2796},{ts:'2026-06-13T17:18',impressions:2798},
-        {ts:'2026-06-13T17:54',impressions:2799},{ts:'2026-06-14T01:10',impressions:2801},
-        {ts:'2026-06-14T03:49',impressions:2803},{ts:'2026-06-14T04:19',impressions:2805},
-        {ts:'2026-06-14T06:42',impressions:2808},{ts:'2026-06-14T10:01',impressions:2810},
-        {ts:'2026-06-14T10:42',impressions:2812},{ts:'2026-06-14T11:14',impressions:2814},
-        {ts:'2026-06-14T12:27',impressions:2820},{ts:'2026-06-14T19:50',impressions:2823},
-        {ts:'2026-06-15T05:24',impressions:2825},{ts:'2026-06-15T07:04',impressions:2827},
-        {ts:'2026-06-15T07:30',impressions:2829},{ts:'2026-06-15T10:43',impressions:2831},
-        {ts:'2026-06-15T17:15',impressions:2833},{ts:'2026-06-15T22:15',impressions:2835},
-        {ts:'2026-06-15T22:31',impressions:2836},{ts:'2026-06-16T00:17',impressions:2838},
-        {ts:'2026-06-16T02:38',impressions:2839},{ts:'2026-06-16T03:22',impressions:2840},
-        {ts:'2026-06-16T04:32',impressions:2841},{ts:'2026-06-16T10:32',impressions:2842},
-        {ts:'2026-06-16T15:17',impressions:2844},{ts:'2026-06-16T18:00',impressions:2850},
-        {ts:'2026-06-16T23:00',impressions:2853},{ts:'2026-06-17T09:30',impressions:2856}
-      ]
+      avatarLetters:'DM', avatarColorBg:'#EEEDFE', avatarColorText:'#26215C'
     }
   ];
 
+  var API_BASE = ''; // mismo dominio, rutas relativas
   var charts = {};
+  var AUTO_REFRESH_MS = 60 * 1000; // refresca el dashboard cada 60s para reflejar el cron
 
+  // ---------- Theme ----------
+  function initTheme(){
+    var saved = null;
+    try { saved = localStorage.getItem('theme'); } catch(e){}
+    var theme = saved || 'light';
+    applyTheme(theme);
+  }
+  function applyTheme(theme){
+    document.documentElement.setAttribute('data-theme', theme);
+    document.getElementById('theme-label').textContent = theme === 'dark' ? 'Modo oscuro' : 'Modo claro';
+    try { localStorage.setItem('theme', theme); } catch(e){}
+  }
+  document.getElementById('theme-toggle').addEventListener('click', function(){
+    var current = document.documentElement.getAttribute('data-theme') || 'light';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+    Object.keys(charts).forEach(function(id){ if(charts[id]) renderChartColors(id); });
+  });
+
+  // ---------- Helpers ----------
   function fmtNum(n){ return Math.round(n).toLocaleString('es-ES'); }
   function fmtDateTime(iso){ var d=new Date(iso); return d.toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
   function fmtDayShort(ds){ var d=new Date(ds+'T00:00'); return d.toLocaleString('es-ES',{day:'2-digit',month:'short'}); }
   function fmtDayLong(ds){ var d=new Date(ds+'T00:00'); return d.toLocaleString('es-ES',{weekday:'long',day:'2-digit',month:'short'}); }
   function pad2(n){ return n<10?'0'+n:''+n; }
   function sortR(r){ return r.slice().sort(function(a,b){return new Date(a.ts)-new Date(b.ts);}); }
+  function todayDateInputValue(){ var d=new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+  function roundedNowHalfHour(){
+    var d = new Date();
+    var m = d.getMinutes() < 30 ? 0 : 30;
+    return pad2(d.getHours())+':'+pad2(m);
+  }
 
   function computeIncrements(readings){
     var s=sortR(readings), out=[];
     for(var i=0;i<s.length;i++){
       var inc=i===0?null:s[i].impressions-s[i-1].impressions;
       var hrs=i===0?null:(new Date(s[i].ts)-new Date(s[i-1].ts))/3600000;
-      out.push({ts:s[i].ts,impressions:s[i].impressions,increment:inc,hours:hrs});
+      out.push({ts:s[i].ts,impressions:s[i].impressions,increment:inc,hours:hrs,source:s[i].source||'auto'});
     }
     return out;
   }
@@ -274,7 +257,7 @@
   }
 
   function colorFor(v,max){
-    if(max<=0) return '#f5f5f5';
+    if(max<=0) return 'var(--bg-secondary)';
     var r=Math.min(1,v/max);
     var stops=[{r:225,g:245,b:238},{r:159,g:225,b:203},{r:93,g:202,b:165},{r:29,g:158,b:117},{r:15,g:110,b:86}];
     var idx=r*(stops.length-1),lo=Math.floor(idx),hi=Math.ceil(idx),t=idx-lo;
@@ -289,9 +272,9 @@
     hd.days.forEach(function(d){hd.dayHour[d].forEach(function(v){if(v>gmax)gmax=v;});});
     var g='<div style="display:grid;grid-template-columns:'+lw+'px repeat(24,'+cw+'px);gap:2px;min-width:'+(lw+24*cw)+'px;">';
     g+='<div></div>';
-    for(var h=0;h<24;h++) g+='<div style="font-size:10px;color:#888;text-align:center;">'+(h%3===0?h:'')+'</div>';
+    for(var h=0;h<24;h++) g+='<div style="font-size:10px;color:var(--text-secondary);text-align:center;">'+(h%3===0?h:'')+'</div>';
     hd.days.forEach(function(d){
-      g+='<div style="font-size:11px;color:#888;display:flex;align-items:center;">'+fmtDayShort(d)+'</div>';
+      g+='<div style="font-size:11px;color:var(--text-secondary);display:flex;align-items:center;">'+fmtDayShort(d)+'</div>';
       for(var h=0;h<24;h++){
         var v=hd.dayHour[d][h],bg=colorFor(v,gmax),lbl=v>0?Math.round(v):'',tc=textFor(v,gmax);
         g+='<div title="'+fmtDayShort(d)+' '+h+':00 — '+Math.round(v*10)/10+'" style="height:'+cw+'px;border-radius:3px;background:'+bg+';font-size:10px;display:flex;align-items:center;justify-content:center;color:'+tc+';">'+lbl+'</div>';
@@ -299,9 +282,9 @@
     });
     g+='</div>';
     section.querySelector('.heatmap-grid').innerHTML=g;
-    var hmax=Math.max.apply(null,hd.hourTotals);
+    var hmax=Math.max.apply(null,hd.hourTotals.length?hd.hourTotals:[0]);
     var r='<div style="display:grid;grid-template-columns:'+lw+'px repeat(24,'+cw+'px);gap:2px;min-width:'+(lw+24*cw)+'px;">';
-    r+='<div style="font-size:11px;color:#888;display:flex;align-items:center;">Total</div>';
+    r+='<div style="font-size:11px;color:var(--text-secondary);display:flex;align-items:center;">Total</div>';
     for(var h2=0;h2<24;h2++){
       var v2=hd.hourTotals[h2],bg2=colorFor(v2,hmax),lbl2=v2>0?Math.round(v2):'',tc2=textFor(v2,hmax);
       r+='<div title="'+h2+':00 — '+Math.round(v2*10)/10+'" style="height:'+cw+'px;border-radius:3px;background:'+bg2+';font-size:10px;display:flex;align-items:center;justify-content:center;color:'+tc2+';">'+lbl2+'</div>';
@@ -316,29 +299,60 @@
     hd.days.slice().reverse().forEach(function(d){
       var total=hd.dayHour[d].reduce(function(s,v){return s+v;},0);
       var tr=document.createElement('tr');
-      tr.style.borderTop='0.5px solid var(--color-border-tertiary)';
+      tr.style.borderTop='0.5px solid var(--border)';
       tr.innerHTML='<td style="padding:6px 0;">'+fmtDayLong(d)+'</td><td style="padding:6px 0;text-align:right;">+'+fmtNum(total)+'</td><td style="padding:6px 0;text-align:right;">+'+fmtNum(total/24)+'</td>';
       body.appendChild(tr);
     });
   }
 
-  function loadReadings(tweet){
-    try{ var v=localStorage.getItem('readings:'+tweet.id); if(v) return JSON.parse(v); }catch(e){}
-    return tweet.seedReadings;
+  // ---------- Data fetching ----------
+  async function fetchAutoReadings(tweetId){
+    try {
+      var resp = await fetch(API_BASE + '/api/get-readings?id=' + encodeURIComponent(tweetId));
+      if (!resp.ok) return [];
+      var data = await resp.json();
+      return (data.readings || []).map(function(r){ return { ts: r.ts, impressions: r.impressions, source: 'auto' }; });
+    } catch(e){
+      console.error('Error obteniendo lecturas automáticas', e);
+      return [];
+    }
   }
-  function saveReadings(id,readings){ try{ localStorage.setItem('readings:'+id,JSON.stringify(readings)); }catch(e){} }
 
+  function loadManualReadings(tweetId){
+    try{ var v=localStorage.getItem('manual_readings:'+tweetId); if(v) return JSON.parse(v); }catch(e){}
+    return [];
+  }
+  function saveManualReadings(tweetId, readings){
+    try{ localStorage.setItem('manual_readings:'+tweetId, JSON.stringify(readings)); }catch(e){}
+  }
+
+  async function loadCombinedReadings(tweetId){
+    var auto = await fetchAutoReadings(tweetId);
+    var manual = loadManualReadings(tweetId);
+    var combined = auto.concat(manual);
+    return sortR(combined);
+  }
+
+  // ---------- Rendering ----------
   function renderHistory(section,wi){
     var body=section.querySelector('.history-body'); body.innerHTML='';
     wi.slice().reverse().forEach(function(r){
-      var tr=document.createElement('tr'); tr.style.borderTop='0.5px solid var(--color-border-tertiary)';
+      var tr=document.createElement('tr'); tr.style.borderTop='0.5px solid var(--border)';
       var il=r.increment===null?'—':(r.increment>=0?'+':'')+fmtNum(r.increment);
-      tr.innerHTML='<td style="padding:6px 0;">'+fmtDateTime(r.ts)+'</td><td style="padding:6px 0;text-align:right;">'+fmtNum(r.impressions)+'</td><td style="padding:6px 0;text-align:right;">'+il+'</td>';
+      var origin = r.source === 'manual' ? 'Manual' : 'Automático';
+      tr.innerHTML='<td style="padding:6px 0;">'+fmtDateTime(r.ts)+'</td><td style="padding:6px 0;text-align:right;">'+fmtNum(r.impressions)+'</td><td style="padding:6px 0;text-align:right;">'+il+'</td><td style="padding:6px 0;text-align:right;font-size:12px;color:var(--text-secondary);">'+origin+'</td>';
       body.appendChild(tr);
     });
   }
 
   function renderMetrics(section,wi,readings){
+    if (wi.length === 0){
+      section.querySelector('.empty-state').style.display = 'block';
+      section.querySelectorAll('.metric-current,.metric-today,.metric-total-increase,.metric-avg-hour,.metric-peak-hour,.metric-avg-day,.metric-avg-week').forEach(function(el){ el.textContent = '—'; });
+      return;
+    }
+    section.querySelector('.empty-state').style.display = 'none';
+
     var last=wi[wi.length-1],first=wi[0];
     var incs=wi.filter(function(r){return r.increment!==null&&r.hours>0;});
     section.querySelector('.metric-current').textContent=fmtNum(last.impressions);
@@ -349,13 +363,16 @@
       section.querySelector('.metric-avg-hour').textContent='+'+(th>0?fmtNum(ti/th):'0');
       var peak=incs.reduce(function(best,r){var rate=r.increment/r.hours;return(!best||rate>best.rate)?{rate:rate,ts:r.ts}:best;},null);
       section.querySelector('.metric-peak-hour').textContent=peak?new Date(peak.ts).toLocaleString('es-ES',{hour:'2-digit',minute:'2-digit'}):'—';
+    } else {
+      section.querySelector('.metric-avg-hour').textContent='+0';
+      section.querySelector('.metric-peak-hour').textContent='—';
     }
     var fd=new Date(first.ts),ld=new Date(last.ts);
     var spanDays=Math.floor((new Date(ld.getFullYear(),ld.getMonth(),ld.getDate())-new Date(fd.getFullYear(),fd.getMonth(),fd.getDate()))/86400000)+1;
     var ti2=last.impressions-first.impressions,apd=spanDays>0?ti2/spanDays:0;
     section.querySelector('.metric-avg-day').textContent='+'+fmtNum(apd);
     section.querySelector('.metric-avg-week').textContent='+'+fmtNum(apd*7);
-    section.querySelector('.avg-disclaimer').textContent='Promedios calculados sobre '+spanDays+' día'+(spanDays===1?'':'s')+' de datos (semanal = proyección).';
+    section.querySelector('.avg-disclaimer').textContent='Promedios calculados sobre '+spanDays+' día'+(spanDays===1?'':'s')+' de datos reales (semanal = proyección).';
     var s=sortR(readings),ldate=new Date(ld.getFullYear(),ld.getMonth(),ld.getDate()),mv=s[0].impressions;
     for(var i=0;i<s.length;i++){var rd=new Date(s[i].ts),rdo=new Date(rd.getFullYear(),rd.getMonth(),rd.getDate());if(rdo<ldate){mv=s[i].impressions;}else{break;}}
     section.querySelector('.metric-today').textContent='+'+fmtNum(last.impressions-mv);
@@ -366,8 +383,17 @@
     var incs=wi.filter(function(r){return r.increment!==null;});
     var labels=incs.map(function(r){return new Date(r.ts).toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});});
     var data=incs.map(function(r){return r.increment;});
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var barColor = isDark ? '#5DCAA5' : '#1D9E75';
     if(charts[tweetId]) charts[tweetId].destroy();
-    charts[tweetId]=new Chart(canvas,{type:'bar',data:{labels:labels,datasets:[{label:'Incremento',data:data,backgroundColor:'#1D9E75',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:14,maxRotation:45,font:{size:11}}},y:{beginAtZero:true,ticks:{font:{size:11},callback:function(v){return fmtNum(v);}}}}}});
+    charts[tweetId]=new Chart(canvas,{type:'bar',data:{labels:labels,datasets:[{label:'Incremento',data:data,backgroundColor:barColor,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:14,maxRotation:45,font:{size:11}}},y:{beginAtZero:true,ticks:{font:{size:11},callback:function(v){return fmtNum(v);}}}}}});
+  }
+
+  function renderChartColors(tweetId){
+    if (!charts[tweetId]) return;
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    charts[tweetId].data.datasets[0].backgroundColor = isDark ? '#5DCAA5' : '#1D9E75';
+    charts[tweetId].update();
   }
 
   function setupTabs(section){
@@ -375,13 +401,27 @@
     btns.forEach(function(btn){
       btn.addEventListener('click',function(){
         var t=btn.dataset.tab;
-        btns.forEach(function(b){var a=b===btn;b.style.color=a?'var(--color-text-primary)':'var(--color-text-secondary)';b.style.borderBottom=a?'2px solid var(--color-text-primary)':'2px solid transparent';});
+        btns.forEach(function(b){var a=b===btn;b.style.color=a?'var(--text-primary)':'var(--text-secondary)';b.style.borderBottom=a?'2px solid var(--text-primary)':'2px solid transparent';});
         panels.forEach(function(p){p.style.display=(p.dataset.panel===t)?'':'none';});
       });
     });
   }
 
-  function renderTweetSection(tweet,container){
+  function populateTimeSelect(selectEl, presetValue){
+    selectEl.innerHTML = '';
+    for (var h = 0; h < 24; h++){
+      [0,30].forEach(function(m){
+        var val = pad2(h) + ':' + pad2(m);
+        var opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = val;
+        if (val === presetValue) opt.selected = true;
+        selectEl.appendChild(opt);
+      });
+    }
+  }
+
+  async function renderTweetSection(tweet, container){
     var tpl=document.getElementById('tweet-section-template');
     var section=tpl.content.firstElementChild.cloneNode(true);
     section.querySelector('.avatar').textContent=tweet.avatarLetters;
@@ -389,37 +429,65 @@
     section.querySelector('.avatar').style.color=tweet.avatarColorText;
     section.querySelector('.author').textContent=tweet.author;
     section.querySelector('.text').textContent=tweet.text;
-    if(tweet.simulated) section.querySelector('.sim-badge').style.display='inline-block';
     container.appendChild(section);
     setupTabs(section);
 
-    function refresh(){
-      var readings=loadReadings(tweet),wi=computeIncrements(readings);
-      renderMetrics(section,wi,readings);
-      renderChart(section,tweet.id,wi);
-      renderHistory(section,wi);
-      renderHeatmap(section,readings);
-      renderDailyTable(section,readings);
-    }
-    refresh();
+    section.querySelector('.input-date').value = todayDateInputValue();
+    populateTimeSelect(section.querySelector('.input-time'), roundedNowHalfHour());
 
-    section.querySelector('.add-reading-form').addEventListener('submit',function(e){
+    async function refresh(){
+      var readings = await loadCombinedReadings(tweet.id);
+      var wi = computeIncrements(readings);
+      renderMetrics(section, wi, readings);
+      renderChart(section, tweet.id, wi);
+      renderHistory(section, wi);
+      renderHeatmap(section, readings);
+      renderDailyTable(section, readings);
+    }
+    await refresh();
+
+    setInterval(refresh, AUTO_REFRESH_MS);
+
+    section.querySelector('.add-reading-form').addEventListener('submit', async function(e){
       e.preventDefault();
       var err=section.querySelector('.form-error'); err.style.display='none';
-      var dt=section.querySelector('.input-datetime').value,imp=section.querySelector('.input-impressions').value;
-      if(!dt||imp==='') return;
-      var ni=parseInt(imp,10),cur=loadReadings(tweet),s=sortR(cur),last=s[s.length-1];
-      if(ni<last.impressions){err.textContent='No puede ser menor que la última lectura ('+fmtNum(last.impressions)+').';err.style.display='block';return;}
-      cur.push({ts:dt,impressions:ni}); saveReadings(tweet.id,cur); refresh();
-      section.querySelector('.add-reading-form').reset();
-    });
+      var dateVal = section.querySelector('.input-date').value;
+      var timeVal = section.querySelector('.input-time').value;
+      var imp = section.querySelector('.input-impressions').value;
+      if(!dateVal || !timeVal || imp==='') return;
 
-    section.querySelector('.reset-btn').addEventListener('click',function(){
-      saveReadings(tweet.id,tweet.seedReadings); refresh();
+      var ni = parseInt(imp,10);
+      var combined = await loadCombinedReadings(tweet.id);
+      var last = combined.length ? combined[combined.length-1] : null;
+
+      if (last && ni <= last.impressions){
+        err.textContent = ni === last.impressions
+          ? 'Ese número ya es igual a la última lectura registrada (' + fmtNum(last.impressions) + '). No se agrega para evitar duplicados.'
+          : 'No puede ser menor que la última lectura (' + fmtNum(last.impressions) + ').';
+        err.style.display = 'block';
+        return;
+      }
+
+      var manual = loadManualReadings(tweet.id);
+      manual.push({ ts: dateVal + 'T' + timeVal, impressions: ni, source: 'manual' });
+      saveManualReadings(tweet.id, manual);
+      await refresh();
+
+      section.querySelector('.input-date').value = todayDateInputValue();
+      populateTimeSelect(section.querySelector('.input-time'), roundedNowHalfHour());
+      section.querySelector('.input-impressions').value = '';
     });
   }
 
-  TWEETS.forEach(function(t){ renderTweetSection(t,document.getElementById('tweets-container')); });
+  async function init(){
+    initTheme();
+    var container=document.getElementById('tweets-container');
+    for(var i=0;i<TWEETS.length;i++){
+      await renderTweetSection(TWEETS[i], container);
+    }
+  }
+
+  init();
 })();
 </script>
 </body>
