@@ -10,9 +10,33 @@ import { createClient } from 'redis';
 
 // Tweets a monitorear. Si agregas o cambias tweets en el futuro, edita esta lista.
 const TWEETS = [
-  { id: 'nubes', tweetId: '1644757424711127041' },
-  { id: 'encendedor_v2', tweetId: '2053848253418848414' }
+  { id: 'nubes', tweetId: '1644757424711127041', label: 'Dr. Manhattan (nubes)' },
+  { id: 'encendedor_v2', tweetId: '2053848253418848414', label: 'Un encendedor blanco' }
 ];
+
+async function sendIncrementEmail({ label, previous, current, increment }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const toEmail = process.env.NOTIFICATION_EMAIL;
+  if (!apiKey || !toEmail) return; // si falta config de correo, simplemente no se envía
+
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'Seguimiento de impresiones <onboarding@resend.dev>',
+        to: [toEmail],
+        subject: `+${increment} impresiones en "${label}"`,
+        html: `<p><strong>${label}</strong> subió de <strong>${previous}</strong> a <strong>${current}</strong> impresiones (+${increment}).</p>`
+      })
+    });
+  } catch (err) {
+    console.error('Error enviando correo de notificación:', err);
+  }
+}
 
 async function getRedisClient() {
   const url = process.env.STORAGE_URL || process.env.REDIS_URL;
@@ -79,13 +103,32 @@ export default async function handler(req, res) {
           continue;
         }
 
-        const reading = { ts: now, impressions: metrics.impressions };
-
-        // Guardamos el historial como una lista en Redis: readings:<id>
         const key = `readings:${tweet.id}`;
-        await redis.rPush(key, JSON.stringify(reading));
 
+        // Revisamos la última lectura guardada para evitar duplicados
+        // y para saber si hubo un incremento real que notificar.
+        const existing = await redis.lRange(key, -1, -1);
+        const lastReading = existing.length ? JSON.parse(existing[0]) : null;
+
+        if (lastReading && metrics.impressions <= lastReading.impressions) {
+          // No hay incremento (o el dato vino igual/menor) -> no se guarda ni se notifica
+          results.push({ tweet: tweet.id, impressions: metrics.impressions, skipped: true, reason: 'sin incremento' });
+          continue;
+        }
+
+        const reading = { ts: now, impressions: metrics.impressions, source: 'auto' };
+        await redis.rPush(key, JSON.stringify(reading));
         results.push({ tweet: tweet.id, ...reading });
+
+        if (lastReading) {
+          const increment = metrics.impressions - lastReading.impressions;
+          await sendIncrementEmail({
+            label: tweet.label,
+            previous: lastReading.impressions,
+            current: metrics.impressions,
+            increment
+          });
+        }
       } catch (err) {
         errors.push({ tweet: tweet.id, error: String(err) });
       }
