@@ -14,10 +14,18 @@ const TWEETS = [
   { id: 'encendedor_v2', tweetId: '2053848253418848414', label: 'Un encendedor blanco' }
 ];
 
-async function sendIncrementEmail({ label, previous, current, increment }) {
+async function sendCombinedIncrementEmail(increments) {
   const apiKey = process.env.RESEND_API_KEY;
   const toEmail = process.env.NOTIFICATION_EMAIL;
-  if (!apiKey || !toEmail) return; // si falta config de correo, simplemente no se envía
+  if (!apiKey || !toEmail || increments.length === 0) return;
+
+  const subject = increments.length === 1
+    ? `+${increments[0].increment} impresiones en "${increments[0].label}"`
+    : `Nuevas impresiones en ${increments.length} tweets`;
+
+  const itemsHtml = increments.map(function(inc){
+    return `<li><strong>${inc.label}</strong>: subió de ${inc.previous} a ${inc.current} impresiones (+${inc.increment}).</li>`;
+  }).join('');
 
   try {
     await fetch('https://api.resend.com/emails', {
@@ -29,8 +37,8 @@ async function sendIncrementEmail({ label, previous, current, increment }) {
       body: JSON.stringify({
         from: 'Seguimiento de impresiones <onboarding@resend.dev>',
         to: [toEmail],
-        subject: `+${increment} impresiones en "${label}"`,
-        html: `<p><strong>${label}</strong> subió de <strong>${previous}</strong> a <strong>${current}</strong> impresiones (+${increment}).</p>`
+        subject: subject,
+        html: `<ul>${itemsHtml}</ul>`
       })
     });
   } catch (err) {
@@ -89,6 +97,7 @@ export default async function handler(req, res) {
   let redis;
   const results = [];
   const errors = [];
+  const incrementsToNotify = [];
 
   try {
     redis = await getRedisClient();
@@ -121,17 +130,21 @@ export default async function handler(req, res) {
         results.push({ tweet: tweet.id, ...reading });
 
         if (lastReading) {
-          const increment = metrics.impressions - lastReading.impressions;
-          await sendIncrementEmail({
+          incrementsToNotify.push({
             label: tweet.label,
             previous: lastReading.impressions,
             current: metrics.impressions,
-            increment
+            increment: metrics.impressions - lastReading.impressions
           });
         }
       } catch (err) {
         errors.push({ tweet: tweet.id, error: String(err) });
       }
+    }
+
+    // Un solo correo combinado, incluso si hubo cambios en varios tweets en este ciclo
+    if (incrementsToNotify.length > 0) {
+      await sendCombinedIncrementEmail(incrementsToNotify);
     }
 
     return res.status(200).json({ success: true, results, errors, fetchedAt: now });
