@@ -119,12 +119,16 @@ export default async function handler(req, res) {
         const existing = await redis.lRange(key, -1, -1);
         const lastReading = existing.length ? JSON.parse(existing[0]) : null;
 
+        console.log(`[DIAGNÓSTICO] tweet=${tweet.id} nuevo=${metrics.impressions} ultimaGuardada=${lastReading ? lastReading.impressions : 'ninguna'} existingRaw=${JSON.stringify(existing)}`);
+
         if (lastReading && metrics.impressions <= lastReading.impressions) {
+          console.log(`[DIAGNÓSTICO] tweet=${tweet.id} -> OMITIDO (sin incremento)`);
           // No hay incremento (o el dato vino igual/menor) -> no se guarda ni se notifica
           results.push({ tweet: tweet.id, impressions: metrics.impressions, skipped: true, reason: 'sin incremento' });
           continue;
         }
 
+        console.log(`[DIAGNÓSTICO] tweet=${tweet.id} -> GUARDANDO nueva lectura`);
         const reading = { ts: now, impressions: metrics.impressions, source: 'auto' };
         await redis.rPush(key, JSON.stringify(reading));
         results.push({ tweet: tweet.id, ...reading });
