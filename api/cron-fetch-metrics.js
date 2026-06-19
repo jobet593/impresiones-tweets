@@ -114,26 +114,18 @@ export default async function handler(req, res) {
 
         const key = `readings:${tweet.id}`;
 
-        // Revisamos la última lectura guardada para evitar duplicados
-        // y para saber si hubo un incremento real que notificar.
+        // Revisamos la última lectura guardada solo para saber si hubo
+        // un incremento real que notificar por correo (ya no para decidir si se guarda).
         const existing = await redis.lRange(key, -1, -1);
         const lastReading = existing.length ? JSON.parse(existing[0]) : null;
 
-        console.log(`[DIAGNÓSTICO] tweet=${tweet.id} nuevo=${metrics.impressions} ultimaGuardada=${lastReading ? lastReading.impressions : 'ninguna'} existingRaw=${JSON.stringify(existing)}`);
-
-        if (lastReading && metrics.impressions <= lastReading.impressions) {
-          console.log(`[DIAGNÓSTICO] tweet=${tweet.id} -> OMITIDO (sin incremento)`);
-          // No hay incremento (o el dato vino igual/menor) -> no se guarda ni se notifica
-          results.push({ tweet: tweet.id, impressions: metrics.impressions, skipped: true, reason: 'sin incremento' });
-          continue;
-        }
-
-        console.log(`[DIAGNÓSTICO] tweet=${tweet.id} -> GUARDANDO nueva lectura`);
         const reading = { ts: now, impressions: metrics.impressions, source: 'auto' };
         await redis.rPush(key, JSON.stringify(reading));
-        results.push({ tweet: tweet.id, ...reading });
 
-        if (lastReading) {
+        const hadIncrement = lastReading && metrics.impressions > lastReading.impressions;
+        results.push({ tweet: tweet.id, ...reading, incremented: !!hadIncrement });
+
+        if (hadIncrement) {
           incrementsToNotify.push({
             label: tweet.label,
             previous: lastReading.impressions,
