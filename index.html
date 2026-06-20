@@ -8,22 +8,12 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#ffffff;
-  --text-primary:#111;
-  --text-secondary:#666;
-  --text-danger:#c0392b;
-  --bg-secondary:#f5f5f5;
-  --border:#e0e0e0;
-  --radius:8px;
-  --accent:#1D9E75;
+  --bg:#ffffff; --text-primary:#111; --text-secondary:#666; --text-danger:#c0392b;
+  --bg-secondary:#f5f5f5; --border:#e0e0e0; --radius:8px; --accent:#1D9E75;
 }
 [data-theme="dark"]{
-  --bg:#121212;
-  --text-primary:#f0f0f0;
-  --text-secondary:#aaa;
-  --bg-secondary:#1e1e1e;
-  --border:#333;
-  --accent:#5DCAA5;
+  --bg:#121212; --text-primary:#f0f0f0; --text-secondary:#aaa;
+  --bg-secondary:#1e1e1e; --border:#333; --accent:#5DCAA5;
 }
 body{font-family:system-ui,-apple-system,sans-serif;color:var(--text-primary);background:var(--bg);padding:2rem;max-width:960px;margin:0 auto;transition:background .2s,color .2s;}
 h1{font-size:1.5rem;font-weight:600;}
@@ -33,6 +23,8 @@ select,input[type="date"],input[type="number"]{
 }
 button[type="submit"]{background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:9px 16px;font-size:14px;cursor:pointer;}
 button[type="submit"]:hover{opacity:.9;}
+.range-btn{border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-secondary);border-radius:var(--radius);padding:6px 12px;font-size:13px;cursor:pointer;white-space:nowrap;}
+.range-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 details summary::-webkit-details-marker{display:none;}
 .theme-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
 .theme-switch{width:42px;height:24px;border-radius:12px;background:var(--border);position:relative;transition:background .2s;flex-shrink:0;}
@@ -46,7 +38,7 @@ details summary::-webkit-details-marker{display:none;}
 <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; gap:1rem;">
   <div>
     <h1>Seguimiento de impresiones</h1>
-    <p id="sync-status" style="font-size:13px; color:var(--text-secondary); margin:4px 0 0;">v6 · conectado a la API de X</p>
+    <p style="font-size:13px; color:var(--text-secondary); margin:4px 0 0;">v7 · registra cada chequeo, con o sin cambio</p>
   </div>
   <div class="theme-toggle" id="theme-toggle">
     <span style="font-size:13px; color:var(--text-secondary);" id="theme-label">Modo claro</span>
@@ -64,13 +56,17 @@ details summary::-webkit-details-marker{display:none;}
         <p class="author" style="font-weight:500; font-size:15px; margin:0;"></p>
         <p class="text" style="font-size:14px; color:var(--text-secondary); margin:2px 0 0; line-height:1.5;"></p>
       </div>
-      <span class="auto-badge" style="font-size:11px; padding:3px 8px; border-radius:var(--radius); background:var(--bg-secondary); color:var(--accent); margin-left:auto; flex-shrink:0; white-space:nowrap; border:1px solid var(--accent);">● Automático</span>
+      <span style="font-size:11px; padding:3px 8px; border-radius:var(--radius); background:var(--bg-secondary); color:var(--accent); margin-left:auto; flex-shrink:0; white-space:nowrap; border:1px solid var(--accent);">● Automático</span>
     </div>
 
     <div class="metrics-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:0.75rem;">
       <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
         <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Impresiones actuales</p>
         <p class="metric-current" style="font-size:24px; font-weight:500; margin:0;">—</p>
+      </div>
+      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
+        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Última revisión</p>
+        <p class="metric-last-check" style="font-size:20px; font-weight:500; margin:0;">—</p>
       </div>
       <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
         <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Hoy</p>
@@ -98,7 +94,7 @@ details summary::-webkit-details-marker{display:none;}
       </div>
     </div>
     <p class="avg-disclaimer" style="font-size:12px; color:var(--text-secondary); margin:0 0 1.5rem;"></p>
-    <p class="empty-state" style="font-size:13px; color:var(--text-secondary); margin:0 0 1.5rem; display:none;">Aún no hay lecturas para este tweet. Espera al próximo ciclo automático (cada 30 min) o agrega una manualmente abajo.</p>
+    <p class="empty-state" style="font-size:13px; color:var(--text-secondary); margin:0 0 1.5rem; display:none;">Aún no hay lecturas para este tweet.</p>
 
     <div class="tab-bar" style="display:flex; gap:4px; margin-bottom:1rem; border-bottom:0.5px solid var(--border); overflow-x:auto;">
       <button type="button" class="tab-btn tab-btn-active" data-tab="bars" style="border:none; background:none; padding:8px 4px; margin-right:16px; font-size:14px; color:var(--text-primary); cursor:pointer; border-bottom:2px solid var(--text-primary); white-space:nowrap;">Incrementos por hora</button>
@@ -106,8 +102,22 @@ details summary::-webkit-details-marker{display:none;}
       <button type="button" class="tab-btn" data-tab="daily" style="border:none; background:none; padding:8px 4px; margin-right:16px; font-size:14px; color:var(--text-secondary); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap;">Por día</button>
     </div>
 
-    <div class="tab-panel" data-panel="bars" style="margin:0 0 1.5rem; position:relative; height:220px;">
-      <canvas class="chart-canvas"></canvas>
+    <div class="tab-panel" data-panel="bars" style="margin:0 0 1.5rem;">
+      <div class="range-controls" style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+        <button type="button" class="range-btn" data-range="24h">24h</button>
+        <button type="button" class="range-btn" data-range="7d">7 días</button>
+        <button type="button" class="range-btn" data-range="30d">30 días</button>
+        <button type="button" class="range-btn active" data-range="all">Todo</button>
+        <button type="button" class="range-btn" data-range="custom">Rango manual</button>
+        <span class="custom-range-inputs" style="display:none; gap:6px; align-items:center;">
+          <input type="date" class="range-start" style="width:auto;">
+          <span style="color:var(--text-secondary); font-size:13px;">a</span>
+          <input type="date" class="range-end" style="width:auto;">
+        </span>
+      </div>
+      <div style="position:relative; height:220px;">
+        <canvas class="chart-canvas"></canvas>
+      </div>
     </div>
 
     <div class="tab-panel" data-panel="heatmap" style="display:none; margin-bottom:1.5rem;">
@@ -130,7 +140,7 @@ details summary::-webkit-details-marker{display:none;}
     </div>
 
     <details style="margin-bottom:1rem;">
-      <summary style="cursor:pointer; font-size:14px; color:var(--text-secondary); padding:8px 0;">Ver historial de lecturas</summary>
+      <summary style="cursor:pointer; font-size:14px; color:var(--text-secondary); padding:8px 0;">Ver historial de lecturas (incluye chequeos sin cambio)</summary>
       <table style="width:100%; font-size:13px; margin-top:8px; table-layout:fixed;">
         <colgroup><col style="width:45%"><col style="width:20%"><col style="width:20%"><col style="width:15%"></colgroup>
         <thead><tr style="text-align:left; color:var(--text-secondary);">
@@ -165,30 +175,18 @@ details summary::-webkit-details-marker{display:none;}
 <script>
 (function(){
   var TWEETS = [
-    {
-      id: 'encendedor_v2',
-      author: 'Un encendedor blanco. @un_encendedor',
-      text: '"¿Para qué seguir construyendo sobre un suelo que ya está cediendo?"',
-      avatarLetters:'UE', avatarColorBg:'#E6F1FB', avatarColorText:'#0C447C'
-    },
-    {
-      id: 'nubes',
-      author: 'Dr. Manhattan @soyjobet',
-      text: '"Qué bonitas son las nubes y más aún cuando tienen forma de gato."',
-      avatarLetters:'DM', avatarColorBg:'#EEEDFE', avatarColorText:'#26215C'
-    }
+    { id:'encendedor_v2', author:'Un encendedor blanco. @un_encendedor', text:'"¿Para qué seguir construyendo sobre un suelo que ya está cediendo?"', avatarLetters:'UE', avatarColorBg:'#E6F1FB', avatarColorText:'#0C447C' },
+    { id:'nubes', author:'Dr. Manhattan @soyjobet', text:'"Qué bonitas son las nubes y más aún cuando tienen forma de gato."', avatarLetters:'DM', avatarColorBg:'#EEEDFE', avatarColorText:'#26215C' }
   ];
 
-  var API_BASE = ''; // mismo dominio, rutas relativas
+  var API_BASE = '';
   var charts = {};
-  var AUTO_REFRESH_MS = 60 * 1000; // refresca el dashboard cada 60s para reflejar el cron
+  var AUTO_REFRESH_MS = 60 * 1000;
+  var sectionState = {}; // por tweet: { range: '24h'|'7d'|'30d'|'all'|'custom', customStart, customEnd }
 
-  // ---------- Theme ----------
   function initTheme(){
-    var saved = null;
-    try { saved = localStorage.getItem('theme'); } catch(e){}
-    var theme = saved || 'light';
-    applyTheme(theme);
+    var saved = null; try { saved = localStorage.getItem('theme'); } catch(e){}
+    applyTheme(saved || 'light');
   }
   function applyTheme(theme){
     document.documentElement.setAttribute('data-theme', theme);
@@ -198,10 +196,9 @@ details summary::-webkit-details-marker{display:none;}
   document.getElementById('theme-toggle').addEventListener('click', function(){
     var current = document.documentElement.getAttribute('data-theme') || 'light';
     applyTheme(current === 'dark' ? 'light' : 'dark');
-    Object.keys(charts).forEach(function(id){ if(charts[id]) renderChartColors(id); });
+    Object.keys(charts).forEach(function(id){ renderChartColors(id); });
   });
 
-  // ---------- Helpers ----------
   function fmtNum(n){ return Math.round(n).toLocaleString('es-ES'); }
   function fmtDateTime(iso){ var d=new Date(iso); return d.toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
   function fmtDayShort(ds){ var d=new Date(ds+'T00:00'); return d.toLocaleString('es-ES',{day:'2-digit',month:'short'}); }
@@ -209,11 +206,7 @@ details summary::-webkit-details-marker{display:none;}
   function pad2(n){ return n<10?'0'+n:''+n; }
   function sortR(r){ return r.slice().sort(function(a,b){return new Date(a.ts)-new Date(b.ts);}); }
   function todayDateInputValue(){ var d=new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
-  function roundedNowHalfHour(){
-    var d = new Date();
-    var m = d.getMinutes() < 30 ? 0 : 30;
-    return pad2(d.getHours())+':'+pad2(m);
-  }
+  function roundedNowHalfHour(){ var d=new Date(); var m=d.getMinutes()<30?0:30; return pad2(d.getHours())+':'+pad2(m); }
 
   function computeIncrements(readings){
     var s=sortR(readings), out=[];
@@ -223,6 +216,20 @@ details summary::-webkit-details-marker{display:none;}
       out.push({ts:s[i].ts,impressions:s[i].impressions,increment:inc,hours:hrs,source:s[i].source||'auto'});
     }
     return out;
+  }
+
+  function filterByRange(readings, state){
+    if (!state || state.range === 'all') return readings;
+    var now = new Date();
+    var start, end;
+    if (state.range === '24h'){ start = new Date(now - 24*3600000); end = now; }
+    else if (state.range === '7d'){ start = new Date(now - 7*24*3600000); end = now; }
+    else if (state.range === '30d'){ start = new Date(now - 30*24*3600000); end = now; }
+    else if (state.range === 'custom'){
+      start = state.customStart ? new Date(state.customStart+'T00:00') : new Date(0);
+      end = state.customEnd ? new Date(state.customEnd+'T23:59:59') : now;
+    } else { return readings; }
+    return readings.filter(function(r){ var t=new Date(r.ts); return t>=start && t<=end; });
   }
 
   function distributeToHours(readings){
@@ -305,19 +312,14 @@ details summary::-webkit-details-marker{display:none;}
     });
   }
 
-  // ---------- Data fetching ----------
   async function fetchAutoReadings(tweetId){
     try {
       var resp = await fetch(API_BASE + '/api/get-readings?id=' + encodeURIComponent(tweetId));
       if (!resp.ok) return [];
       var data = await resp.json();
       return (data.readings || []).map(function(r){ return { ts: r.ts, impressions: r.impressions, source: 'auto' }; });
-    } catch(e){
-      console.error('Error obteniendo lecturas automáticas', e);
-      return [];
-    }
+    } catch(e){ console.error('Error obteniendo lecturas automáticas', e); return []; }
   }
-
   function loadManualReadings(tweetId){
     try{ var v=localStorage.getItem('manual_readings:'+tweetId); if(v) return JSON.parse(v); }catch(e){}
     return [];
@@ -325,15 +327,12 @@ details summary::-webkit-details-marker{display:none;}
   function saveManualReadings(tweetId, readings){
     try{ localStorage.setItem('manual_readings:'+tweetId, JSON.stringify(readings)); }catch(e){}
   }
-
   async function loadCombinedReadings(tweetId){
     var auto = await fetchAutoReadings(tweetId);
     var manual = loadManualReadings(tweetId);
-    var combined = auto.concat(manual);
-    return sortR(combined);
+    return sortR(auto.concat(manual));
   }
 
-  // ---------- Rendering ----------
   function renderHistory(section,wi){
     var body=section.querySelector('.history-body'); body.innerHTML='';
     wi.slice().reverse().forEach(function(r){
@@ -348,14 +347,14 @@ details summary::-webkit-details-marker{display:none;}
   function renderMetrics(section,wi,readings){
     if (wi.length === 0){
       section.querySelector('.empty-state').style.display = 'block';
-      section.querySelectorAll('.metric-current,.metric-today,.metric-total-increase,.metric-avg-hour,.metric-peak-hour,.metric-avg-day,.metric-avg-week').forEach(function(el){ el.textContent = '—'; });
+      section.querySelectorAll('.metric-current,.metric-today,.metric-total-increase,.metric-avg-hour,.metric-peak-hour,.metric-avg-day,.metric-avg-week,.metric-last-check').forEach(function(el){ el.textContent = '—'; });
       return;
     }
     section.querySelector('.empty-state').style.display = 'none';
-
     var last=wi[wi.length-1],first=wi[0];
-    var incs=wi.filter(function(r){return r.increment!==null&&r.hours>0;});
+    var incs=wi.filter(function(r){return r.increment!==null&&r.hours>0&&r.increment>0;});
     section.querySelector('.metric-current').textContent=fmtNum(last.impressions);
+    section.querySelector('.metric-last-check').textContent=fmtDateTime(last.ts);
     section.querySelector('.metric-total-increase').textContent='+'+fmtNum(last.impressions-first.impressions);
     if(incs.length>0){
       var ti=incs.reduce(function(s,r){return s+r.increment;},0);
@@ -372,17 +371,43 @@ details summary::-webkit-details-marker{display:none;}
     var ti2=last.impressions-first.impressions,apd=spanDays>0?ti2/spanDays:0;
     section.querySelector('.metric-avg-day').textContent='+'+fmtNum(apd);
     section.querySelector('.metric-avg-week').textContent='+'+fmtNum(apd*7);
-    section.querySelector('.avg-disclaimer').textContent='Promedios calculados sobre '+spanDays+' día'+(spanDays===1?'':'s')+' de datos reales (semanal = proyección).';
+    section.querySelector('.avg-disclaimer').textContent='Promedios sobre '+spanDays+' día'+(spanDays===1?'':'s')+' (semanal = proyección).';
     var s=sortR(readings),ldate=new Date(ld.getFullYear(),ld.getMonth(),ld.getDate()),mv=s[0].impressions;
     for(var i=0;i<s.length;i++){var rd=new Date(s[i].ts),rdo=new Date(rd.getFullYear(),rd.getMonth(),rd.getDate());if(rdo<ldate){mv=s[i].impressions;}else{break;}}
     section.querySelector('.metric-today').textContent='+'+fmtNum(last.impressions-mv);
   }
 
-  function renderChart(section,tweetId,wi){
+  function bucketSizeForRange(rangeKey, pointCount){
+    // agrupa más medias-horas por barra cuando el rango es amplio o hay muchos puntos
+    if (rangeKey === '24h') return 1;
+    if (rangeKey === '7d') return 2;
+    if (rangeKey === '30d') return 8;
+    if (pointCount > 300) return 24;
+    if (pointCount > 100) return 8;
+    if (pointCount > 40) return 2;
+    return 1;
+  }
+
+  function renderChart(section, tweetId, wiFull, rangeKey){
     var canvas=section.querySelector('.chart-canvas');
-    var incs=wi.filter(function(r){return r.increment!==null;});
-    var labels=incs.map(function(r){return new Date(r.ts).toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});});
-    var data=incs.map(function(r){return r.increment;});
+    // Solo incrementos reales (>0), tal como se pidió
+    var incs = wiFull.filter(function(r){ return r.increment !== null && r.increment > 0; });
+
+    var bucketSize = bucketSizeForRange(rangeKey, incs.length);
+    var labels = [], data = [];
+    if (bucketSize <= 1){
+      labels = incs.map(function(r){ return new Date(r.ts).toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); });
+      data = incs.map(function(r){ return r.increment; });
+    } else {
+      for (var i=0; i<incs.length; i += bucketSize){
+        var chunk = incs.slice(i, i+bucketSize);
+        var sum = chunk.reduce(function(s,r){return s+r.increment;},0);
+        var lastInChunk = chunk[chunk.length-1];
+        labels.push(new Date(lastInChunk.ts).toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}));
+        data.push(sum);
+      }
+    }
+
     var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     var barColor = isDark ? '#5DCAA5' : '#1D9E75';
     if(charts[tweetId]) charts[tweetId].destroy();
@@ -413,12 +438,36 @@ details summary::-webkit-details-marker{display:none;}
       [0,30].forEach(function(m){
         var val = pad2(h) + ':' + pad2(m);
         var opt = document.createElement('option');
-        opt.value = val;
-        opt.textContent = val;
+        opt.value = val; opt.textContent = val;
         if (val === presetValue) opt.selected = true;
         selectEl.appendChild(opt);
       });
     }
+  }
+
+  function setupRangeControls(section, tweetId, onChange){
+    var btns = section.querySelectorAll('.range-btn');
+    var customInputs = section.querySelector('.custom-range-inputs');
+    var startInput = section.querySelector('.range-start');
+    var endInput = section.querySelector('.range-end');
+
+    btns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        btns.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        var range = btn.dataset.range;
+        sectionState[tweetId].range = range;
+        customInputs.style.display = range === 'custom' ? 'inline-flex' : 'none';
+        if (range !== 'custom') onChange();
+      });
+    });
+    [startInput, endInput].forEach(function(inp){
+      inp.addEventListener('change', function(){
+        sectionState[tweetId].customStart = startInput.value;
+        sectionState[tweetId].customEnd = endInput.value;
+        if (startInput.value && endInput.value) onChange();
+      });
+    });
   }
 
   async function renderTweetSection(tweet, container){
@@ -432,20 +481,32 @@ details summary::-webkit-details-marker{display:none;}
     container.appendChild(section);
     setupTabs(section);
 
+    sectionState[tweet.id] = { range: 'all', customStart: null, customEnd: null };
+
     section.querySelector('.input-date').value = todayDateInputValue();
     populateTimeSelect(section.querySelector('.input-time'), roundedNowHalfHour());
 
-    async function refresh(){
-      var readings = await loadCombinedReadings(tweet.id);
-      var wi = computeIncrements(readings);
-      renderMetrics(section, wi, readings);
-      renderChart(section, tweet.id, wi);
-      renderHistory(section, wi);
-      renderHeatmap(section, readings);
-      renderDailyTable(section, readings);
-    }
-    await refresh();
+    var latestReadings = [];
 
+    async function refresh(){
+      latestReadings = await loadCombinedReadings(tweet.id);
+      var wiFull = computeIncrements(latestReadings);
+      renderMetrics(section, wiFull, latestReadings);
+      renderHeatmap(section, latestReadings);
+      renderDailyTable(section, latestReadings);
+      updateChart();
+    }
+
+    function updateChart(){
+      var state = sectionState[tweet.id];
+      var filtered = filterByRange(latestReadings, state);
+      var wiFiltered = computeIncrements(filtered);
+      renderChart(section, tweet.id, wiFiltered, state.range);
+    }
+
+    setupRangeControls(section, tweet.id, updateChart);
+
+    await refresh();
     setInterval(refresh, AUTO_REFRESH_MS);
 
     section.querySelector('.add-reading-form').addEventListener('submit', async function(e){
@@ -460,10 +521,8 @@ details summary::-webkit-details-marker{display:none;}
       var combined = await loadCombinedReadings(tweet.id);
       var last = combined.length ? combined[combined.length-1] : null;
 
-      if (last && ni <= last.impressions){
-        err.textContent = ni === last.impressions
-          ? 'Ese número ya es igual a la última lectura registrada (' + fmtNum(last.impressions) + '). No se agrega para evitar duplicados.'
-          : 'No puede ser menor que la última lectura (' + fmtNum(last.impressions) + ').';
+      if (last && ni < last.impressions){
+        err.textContent = 'No puede ser menor que la última lectura (' + fmtNum(last.impressions) + ').';
         err.style.display = 'block';
         return;
       }
@@ -486,7 +545,6 @@ details summary::-webkit-details-marker{display:none;}
       await renderTweetSection(TWEETS[i], container);
     }
   }
-
   init();
 })();
 </script>
