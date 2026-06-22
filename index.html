@@ -377,41 +377,59 @@ details summary::-webkit-details-marker{display:none;}
     section.querySelector('.metric-today').textContent='+'+fmtNum(last.impressions-mv);
   }
 
-  function bucketSizeForRange(rangeKey, pointCount){
-    // agrupa más medias-horas por barra cuando el rango es amplio o hay muchos puntos
-    if (rangeKey === '24h') return 1;
-    if (rangeKey === '7d') return 2;
-    if (rangeKey === '30d') return 8;
-    if (pointCount > 300) return 24;
-    if (pointCount > 100) return 8;
-    if (pointCount > 40) return 2;
-    return 1;
-  }
-
+  
   function renderChart(section, tweetId, wiFull, rangeKey){
     var canvas=section.querySelector('.chart-canvas');
-    // Solo incrementos reales (>0), tal como se pidió
-    var incs = wiFull.filter(function(r){ return r.increment !== null && r.increment > 0; });
 
-    var bucketSize = bucketSizeForRange(rangeKey, incs.length);
-    var labels = [], data = [];
-    if (bucketSize <= 1){
-      labels = incs.map(function(r){ return new Date(r.ts).toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); });
-      data = incs.map(function(r){ return r.increment; });
-    } else {
-      for (var i=0; i<incs.length; i += bucketSize){
-        var chunk = incs.slice(i, i+bucketSize);
-        var sum = chunk.reduce(function(s,r){return s+r.increment;},0);
-        var lastInChunk = chunk[chunk.length-1];
-        labels.push(new Date(lastInChunk.ts).toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}));
-        data.push(sum);
-      }
-    }
+    // Usamos TODAS las lecturas (con y sin incremento) para construir el eje de tiempo,
+    // pero la barra solo tiene altura cuando hubo incremento real.
+    var withFirstSkipped = wiFull.filter(function(r){ return r.increment !== null; });
+
+    var labels = withFirstSkipped.map(function(r){
+      return new Date(r.ts).toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    });
+    var data = withFirstSkipped.map(function(r){
+      return (r.increment > 0) ? r.increment : null; // null = sin barra, pero conserva el espacio en el eje
+    });
+    var cumulative = withFirstSkipped.map(function(r){ return r.impressions; });
+
+    var pointCount = withFirstSkipped.length;
+    // Ancho de barra dinámico: con muchos puntos, las barras se hacen más finas para que todo quepa
+    var barThickness = pointCount > 400 ? 1 : pointCount > 150 ? 2 : pointCount > 60 ? 4 : undefined;
 
     var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     var barColor = isDark ? '#5DCAA5' : '#1D9E75';
     if(charts[tweetId]) charts[tweetId].destroy();
-    charts[tweetId]=new Chart(canvas,{type:'bar',data:{labels:labels,datasets:[{label:'Incremento',data:data,backgroundColor:barColor,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:14,maxRotation:45,font:{size:11}}},y:{beginAtZero:true,ticks:{font:{size:11},callback:function(v){return fmtNum(v);}}}}}});
+
+    var datasetConfig = { label:'Incremento', data:data, backgroundColor:barColor, borderRadius:2 };
+    if (barThickness) datasetConfig.barThickness = barThickness;
+
+    charts[tweetId]=new Chart(canvas,{
+      type:'bar',
+      data:{ labels:labels, datasets:[datasetConfig] },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            callbacks:{
+              label: function(ctx){
+                var idx = ctx.dataIndex;
+                var inc = data[idx];
+                var total = cumulative[idx];
+                var incLabel = inc ? ('+' + fmtNum(inc)) : 'Sin cambio';
+                return incLabel + ' · Total: ' + fmtNum(total);
+              }
+            }
+          }
+        },
+        scales:{
+          x:{ ticks:{ autoSkip:true, maxTicksLimit:14, maxRotation:45, font:{size:11} } },
+          y:{ beginAtZero:true, ticks:{ font:{size:11}, callback:function(v){return fmtNum(v);} } }
+        }
+      }
+    });
   }
 
   function renderChartColors(tweetId){
