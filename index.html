@@ -492,6 +492,7 @@ details summary::-webkit-details-marker{display:none;}
       latestReadings = await loadCombinedReadings(tweet.id);
       var wiFull = computeIncrements(latestReadings);
       renderMetrics(section, wiFull, latestReadings);
+      renderHistory(section, wiFull);
       renderHeatmap(section, latestReadings);
       renderDailyTable(section, latestReadings);
       updateChart();
