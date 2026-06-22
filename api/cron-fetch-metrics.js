@@ -10,7 +10,7 @@ import { createClient } from 'redis';
 
 // Tweets a monitorear. Si agregas o cambias tweets en el futuro, edita esta lista.
 const TWEETS = [
-  { id: 'nubes', tweetId: '1644757424711127041', label: 'Dr. Manhattan (nubes)' },
+  { id: 'nubes', tweetId: '1727081176794558624', label: 'Dr. Manhattan (nubes)' },
   { id: 'encendedor_v2', tweetId: '2053848253418848414', label: 'Un encendedor blanco' }
 ];
 
