@@ -8,12 +8,12 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#ffffff; --text-primary:#111; --text-secondary:#666; --text-danger:#c0392b;
-  --bg-secondary:#f5f5f5; --border:#e0e0e0; --radius:8px; --accent:#1D9E75;
+  --bg:#ffffff;--text-primary:#111;--text-secondary:#666;--text-danger:#c0392b;
+  --bg-secondary:#f5f5f5;--bg-tertiary:#ebebeb;--border:#e0e0e0;--radius:8px;--accent:#1D9E75;--accent-alpha:rgba(29,158,117,0.15);
 }
 [data-theme="dark"]{
-  --bg:#121212; --text-primary:#f0f0f0; --text-secondary:#aaa;
-  --bg-secondary:#1e1e1e; --border:#333; --accent:#5DCAA5;
+  --bg:#121212;--text-primary:#f0f0f0;--text-secondary:#aaa;
+  --bg-secondary:#1e1e1e;--bg-tertiary:#2a2a2a;--border:#333;--accent:#5DCAA5;--accent-alpha:rgba(93,202,165,0.12);
 }
 body{font-family:system-ui,-apple-system,sans-serif;color:var(--text-primary);background:var(--bg);padding:2rem;max-width:960px;margin:0 auto;transition:background .2s,color .2s;}
 h1{font-size:1.5rem;font-weight:600;}
@@ -21,27 +21,36 @@ select,input[type="date"],input[type="number"]{
   background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);
   padding:8px 12px;font-size:14px;color:var(--text-primary);width:100%;
 }
+.chart-select{
+  appearance:none;-webkit-appearance:none;
+  background:var(--bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 10px center;
+  border:1px solid var(--border);border-radius:var(--radius);padding:6px 32px 6px 12px;
+  font-size:13px;color:var(--text-primary);cursor:pointer;width:auto;
+}
+.chart-select:hover{border-color:var(--accent);}
 button[type="submit"]{background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:9px 16px;font-size:14px;cursor:pointer;}
 button[type="submit"]:hover{opacity:.9;}
-.range-btn{border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-secondary);border-radius:var(--radius);padding:6px 12px;font-size:13px;cursor:pointer;white-space:nowrap;}
-.range-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 details summary::-webkit-details-marker{display:none;}
 .theme-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
 .theme-switch{width:42px;height:24px;border-radius:12px;background:var(--border);position:relative;transition:background .2s;flex-shrink:0;}
 .theme-switch::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
 [data-theme="dark"] .theme-switch{background:var(--accent);}
 [data-theme="dark"] .theme-switch::after{transform:translateX(18px);}
+.metric-card{background:var(--bg-secondary);border-radius:var(--radius);padding:1rem;}
+.metric-card p:first-child{font-size:13px;color:var(--text-secondary);margin:0 0 4px;}
+.metric-card p:last-child{font-size:24px;font-weight:500;margin:0;}
+.metric-card.highlight p:last-child{font-size:20px;}
 </style>
 </head>
 <body>
 
-<div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; gap:1rem;">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;">
   <div>
     <h1>Seguimiento de impresiones</h1>
-    <p style="font-size:13px; color:var(--text-secondary); margin:4px 0 0;">v7 · registra cada chequeo, con o sin cambio</p>
+    <p style="font-size:13px;color:var(--text-secondary);margin:4px 0 0;">v8 · registra cada chequeo, con o sin cambio</p>
   </div>
   <div class="theme-toggle" id="theme-toggle">
-    <span style="font-size:13px; color:var(--text-secondary);" id="theme-label">Modo claro</span>
+    <span style="font-size:13px;color:var(--text-secondary);" id="theme-label">Modo claro</span>
     <div class="theme-switch"></div>
   </div>
 </div>
@@ -49,126 +58,108 @@ details summary::-webkit-details-marker{display:none;}
 <div id="tweets-container"></div>
 
 <template id="tweet-section-template">
-  <section class="tweet-section" style="margin-bottom:2.5rem; padding-bottom:2rem; border-bottom:0.5px solid var(--border);">
-    <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:1rem;">
-      <div class="avatar" style="width:40px; height:40px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-weight:500; font-size:14px;"></div>
+  <section class="tweet-section" style="margin-bottom:2.5rem;padding-bottom:2rem;border-bottom:0.5px solid var(--border);">
+    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:1rem;">
+      <div class="avatar" style="width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:500;font-size:14px;"></div>
       <div style="min-width:0;">
-        <p class="author" style="font-weight:500; font-size:15px; margin:0;"></p>
-        <p class="text" style="font-size:14px; color:var(--text-secondary); margin:2px 0 0; line-height:1.5;"></p>
+        <p class="author" style="font-weight:500;font-size:15px;margin:0;"></p>
+        <p class="text" style="font-size:14px;color:var(--text-secondary);margin:2px 0 0;line-height:1.5;"></p>
       </div>
-      <span style="font-size:11px; padding:3px 8px; border-radius:var(--radius); background:var(--bg-secondary); color:var(--accent); margin-left:auto; flex-shrink:0; white-space:nowrap; border:1px solid var(--accent);">● Automático</span>
+      <span style="font-size:11px;padding:3px 8px;border-radius:var(--radius);background:var(--bg-secondary);color:var(--accent);margin-left:auto;flex-shrink:0;white-space:nowrap;border:1px solid var(--accent);">● Automático</span>
     </div>
 
-    <div class="metrics-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:0.75rem;">
-      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
-        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Impresiones actuales</p>
-        <p class="metric-current" style="font-size:24px; font-weight:500; margin:0;">—</p>
-      </div>
-      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
-        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Última revisión</p>
-        <p class="metric-last-check" style="font-size:20px; font-weight:500; margin:0;">—</p>
-      </div>
-      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
-        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Hoy</p>
-        <p class="metric-today" style="font-size:24px; font-weight:500; margin:0;">—</p>
-      </div>
-      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
-        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Incremento total</p>
-        <p class="metric-total-increase" style="font-size:24px; font-weight:500; margin:0;">—</p>
-      </div>
-      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
-        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Promedio por hora</p>
-        <p class="metric-avg-hour" style="font-size:24px; font-weight:500; margin:0;">—</p>
-      </div>
-      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
-        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Hora pico</p>
-        <p class="metric-peak-hour" style="font-size:24px; font-weight:500; margin:0;">—</p>
-      </div>
-      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
-        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Promedio por día</p>
-        <p class="metric-avg-day" style="font-size:24px; font-weight:500; margin:0;">—</p>
-      </div>
-      <div style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem;">
-        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 4px;">Promedio por semana</p>
-        <p class="metric-avg-week" style="font-size:24px; font-weight:500; margin:0;">—</p>
-      </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:0.75rem;">
+      <div class="metric-card"><p>Impresiones actuales</p><p class="metric-current">—</p></div>
+      <div class="metric-card highlight"><p>Última revisión</p><p class="metric-last-check">—</p></div>
+      <div class="metric-card"><p>Hoy</p><p class="metric-today">—</p></div>
+      <div class="metric-card"><p>Incremento total</p><p class="metric-total-increase">—</p></div>
+      <div class="metric-card"><p>Promedio por hora</p><p class="metric-avg-hour">—</p></div>
+      <div class="metric-card"><p>Hora pico</p><p class="metric-peak-hour">—</p></div>
+      <div class="metric-card"><p>Promedio por día</p><p class="metric-avg-day">—</p></div>
+      <div class="metric-card"><p>Promedio por semana</p><p class="metric-avg-week">—</p></div>
     </div>
-    <p class="avg-disclaimer" style="font-size:12px; color:var(--text-secondary); margin:0 0 1.5rem;"></p>
-    <p class="empty-state" style="font-size:13px; color:var(--text-secondary); margin:0 0 1.5rem; display:none;">Aún no hay lecturas para este tweet.</p>
+    <p class="avg-disclaimer" style="font-size:12px;color:var(--text-secondary);margin:0 0 1.5rem;"></p>
+    <p class="empty-state" style="font-size:13px;color:var(--text-secondary);margin:0 0 1.5rem;display:none;">Aún no hay lecturas. Espera el próximo ciclo automático (cada 30 min).</p>
 
-    <div class="tab-bar" style="display:flex; gap:4px; margin-bottom:1rem; border-bottom:0.5px solid var(--border); overflow-x:auto;">
-      <button type="button" class="tab-btn tab-btn-active" data-tab="bars" style="border:none; background:none; padding:8px 4px; margin-right:16px; font-size:14px; color:var(--text-primary); cursor:pointer; border-bottom:2px solid var(--text-primary); white-space:nowrap;">Incrementos por hora</button>
-      <button type="button" class="tab-btn" data-tab="heatmap" style="border:none; background:none; padding:8px 4px; margin-right:16px; font-size:14px; color:var(--text-secondary); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap;">Heatmap</button>
-      <button type="button" class="tab-btn" data-tab="daily" style="border:none; background:none; padding:8px 4px; margin-right:16px; font-size:14px; color:var(--text-secondary); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap;">Por día</button>
+    <div class="tab-bar" style="display:flex;gap:4px;margin-bottom:1rem;border-bottom:0.5px solid var(--border);overflow-x:auto;">
+      <button type="button" class="tab-btn tab-btn-active" data-tab="chart" style="border:none;background:none;padding:8px 4px;margin-right:16px;font-size:14px;color:var(--text-primary);cursor:pointer;border-bottom:2px solid var(--text-primary);white-space:nowrap;">Incrementos</button>
+      <button type="button" class="tab-btn" data-tab="heatmap" style="border:none;background:none;padding:8px 4px;margin-right:16px;font-size:14px;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;">Heatmap</button>
+      <button type="button" class="tab-btn" data-tab="daily" style="border:none;background:none;padding:8px 4px;margin-right:16px;font-size:14px;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;">Por día</button>
     </div>
 
-    <div class="tab-panel" data-panel="bars" style="margin:0 0 1.5rem;">
-      <div class="range-controls" style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
-        <button type="button" class="range-btn" data-range="24h">24h</button>
-        <button type="button" class="range-btn" data-range="7d">7 días</button>
-        <button type="button" class="range-btn" data-range="30d">30 días</button>
-        <button type="button" class="range-btn active" data-range="all">Todo</button>
-        <button type="button" class="range-btn" data-range="custom">Rango manual</button>
-        <span class="custom-range-inputs" style="display:none; gap:6px; align-items:center;">
+    <div class="tab-panel" data-panel="chart" style="margin:0 0 1.5rem;">
+      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap;">
+        <select class="chart-select select-range">
+          <option value="1d">Último día</option>
+          <option value="3d">Últimos 3 días</option>
+          <option value="7d">Última semana</option>
+          <option value="30d" selected>Último mes</option>
+          <option value="all">Todo</option>
+        </select>
+        <select class="chart-select select-granularity">
+          <option value="hourly" selected>Por hora</option>
+          <option value="daily">Por día</option>
+        </select>
+        <div class="custom-range-inputs" style="display:none;gap:6px;align-items:center;">
           <input type="date" class="range-start" style="width:auto;">
-          <span style="color:var(--text-secondary); font-size:13px;">a</span>
+          <span style="color:var(--text-secondary);font-size:13px;">a</span>
           <input type="date" class="range-end" style="width:auto;">
-        </span>
+        </div>
       </div>
-      <div style="position:relative; height:220px;">
+      <div style="position:relative;height:240px;">
         <canvas class="chart-canvas"></canvas>
       </div>
     </div>
 
-    <div class="tab-panel" data-panel="heatmap" style="display:none; margin-bottom:1.5rem;">
-      <p style="font-size:13px; color:var(--text-secondary); margin:0 0 8px;">Impresiones estimadas por día y hora</p>
+    <div class="tab-panel" data-panel="heatmap" style="display:none;margin-bottom:1.5rem;">
+      <p style="font-size:13px;color:var(--text-secondary);margin:0 0 8px;">Impresiones estimadas por día y hora</p>
       <div style="overflow-x:auto;"><div class="heatmap-grid"></div></div>
-      <p style="font-size:13px; color:var(--text-secondary); margin:1.5rem 0 8px;">Total combinado por hora del día</p>
+      <p style="font-size:13px;color:var(--text-secondary);margin:1.5rem 0 8px;">Total combinado por hora del día</p>
       <div style="overflow-x:auto;"><div class="heatmap-row"></div></div>
     </div>
 
-    <div class="tab-panel" data-panel="daily" style="display:none; margin-bottom:1.5rem;">
-      <table style="width:100%; font-size:13px; table-layout:fixed;">
+    <div class="tab-panel" data-panel="daily" style="display:none;margin-bottom:1.5rem;">
+      <table style="width:100%;font-size:13px;table-layout:fixed;">
         <colgroup><col style="width:40%"><col style="width:30%"><col style="width:30%"></colgroup>
-        <thead><tr style="text-align:left; color:var(--text-secondary);">
-          <th style="padding:6px 0; font-weight:400;">Día</th>
-          <th style="padding:6px 0; font-weight:400; text-align:right;">Impresiones ganadas</th>
-          <th style="padding:6px 0; font-weight:400; text-align:right;">Promedio /hora</th>
+        <thead><tr style="text-align:left;color:var(--text-secondary);">
+          <th style="padding:6px 0;font-weight:400;">Día</th>
+          <th style="padding:6px 0;font-weight:400;text-align:right;">Impresiones ganadas</th>
+          <th style="padding:6px 0;font-weight:400;text-align:right;">Promedio /hora</th>
         </tr></thead>
         <tbody class="daily-body"></tbody>
       </table>
     </div>
 
     <details style="margin-bottom:1rem;">
-      <summary style="cursor:pointer; font-size:14px; color:var(--text-secondary); padding:8px 0;">Ver historial de lecturas (incluye chequeos sin cambio)</summary>
-      <table style="width:100%; font-size:13px; margin-top:8px; table-layout:fixed;">
+      <summary style="cursor:pointer;font-size:14px;color:var(--text-secondary);padding:8px 0;">Ver historial de lecturas (incluye chequeos sin cambio)</summary>
+      <table style="width:100%;font-size:13px;margin-top:8px;table-layout:fixed;">
         <colgroup><col style="width:45%"><col style="width:20%"><col style="width:20%"><col style="width:15%"></colgroup>
-        <thead><tr style="text-align:left; color:var(--text-secondary);">
-          <th style="padding:6px 0; font-weight:400;">Fecha y hora</th>
-          <th style="padding:6px 0; font-weight:400; text-align:right;">Impresiones</th>
-          <th style="padding:6px 0; font-weight:400; text-align:right;">Incremento</th>
-          <th style="padding:6px 0; font-weight:400; text-align:right;">Origen</th>
+        <thead><tr style="text-align:left;color:var(--text-secondary);">
+          <th style="padding:6px 0;font-weight:400;">Fecha y hora</th>
+          <th style="padding:6px 0;font-weight:400;text-align:right;">Impresiones</th>
+          <th style="padding:6px 0;font-weight:400;text-align:right;">Incremento</th>
+          <th style="padding:6px 0;font-weight:400;text-align:right;">Origen</th>
         </tr></thead>
         <tbody class="history-body"></tbody>
       </table>
     </details>
 
-    <form class="add-reading-form" style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
-      <div style="flex:1; min-width:140px;">
-        <label style="font-size:13px; color:var(--text-secondary); display:block; margin-bottom:4px;">Fecha</label>
+    <form class="add-reading-form" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+      <div style="flex:1;min-width:140px;">
+        <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:4px;">Fecha</label>
         <input type="date" class="input-date" required>
       </div>
-      <div style="flex:1; min-width:120px;">
-        <label style="font-size:13px; color:var(--text-secondary); display:block; margin-bottom:4px;">Hora</label>
+      <div style="flex:1;min-width:120px;">
+        <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:4px;">Hora</label>
         <select class="input-time" required></select>
       </div>
-      <div style="flex:1; min-width:120px;">
-        <label style="font-size:13px; color:var(--text-secondary); display:block; margin-bottom:4px;">Impresiones</label>
+      <div style="flex:1;min-width:120px;">
+        <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:4px;">Impresiones</label>
         <input type="number" class="input-impressions" min="0" required placeholder="ej. 860">
       </div>
       <button type="submit">+ Agregar lectura</button>
     </form>
-    <p class="form-error" style="color:var(--text-danger); font-size:13px; margin:8px 0 0; display:none;"></p>
+    <p class="form-error" style="color:var(--text-danger);font-size:13px;margin:8px 0 0;display:none;"></p>
   </section>
 </template>
 
@@ -181,35 +172,37 @@ details summary::-webkit-details-marker{display:none;}
 
   var API_BASE = '';
   var charts = {};
-  var AUTO_REFRESH_MS = 60 * 1000;
-  var sectionState = {}; // por tweet: { range: '24h'|'7d'|'30d'|'all'|'custom', customStart, customEnd }
+  var AUTO_REFRESH_MS = 60000;
+  var sectionState = {};
 
+  // ---------- Theme ----------
   function initTheme(){
-    var saved = null; try { saved = localStorage.getItem('theme'); } catch(e){}
-    applyTheme(saved || 'light');
+    var saved=null; try{saved=localStorage.getItem('theme');}catch(e){}
+    applyTheme(saved||'light');
   }
   function applyTheme(theme){
-    document.documentElement.setAttribute('data-theme', theme);
-    document.getElementById('theme-label').textContent = theme === 'dark' ? 'Modo oscuro' : 'Modo claro';
-    try { localStorage.setItem('theme', theme); } catch(e){}
+    document.documentElement.setAttribute('data-theme',theme);
+    document.getElementById('theme-label').textContent=theme==='dark'?'Modo oscuro':'Modo claro';
+    try{localStorage.setItem('theme',theme);}catch(e){}
+    Object.keys(charts).forEach(function(id){ if(charts[id]) updateChartTheme(id); });
   }
-  document.getElementById('theme-toggle').addEventListener('click', function(){
-    var current = document.documentElement.getAttribute('data-theme') || 'light';
-    applyTheme(current === 'dark' ? 'light' : 'dark');
-    Object.keys(charts).forEach(function(id){ renderChartColors(id); });
+  document.getElementById('theme-toggle').addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme')||'light';
+    applyTheme(cur==='dark'?'light':'dark');
   });
 
-  function fmtNum(n){ return Math.round(n).toLocaleString('es-ES'); }
-  function fmtDateTime(iso){ var d=new Date(iso); return d.toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
-  function fmtDayShort(ds){ var d=new Date(ds+'T00:00'); return d.toLocaleString('es-ES',{day:'2-digit',month:'short'}); }
-  function fmtDayLong(ds){ var d=new Date(ds+'T00:00'); return d.toLocaleString('es-ES',{weekday:'long',day:'2-digit',month:'short'}); }
-  function pad2(n){ return n<10?'0'+n:''+n; }
-  function sortR(r){ return r.slice().sort(function(a,b){return new Date(a.ts)-new Date(b.ts);}); }
-  function todayDateInputValue(){ var d=new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
-  function roundedNowHalfHour(){ var d=new Date(); var m=d.getMinutes()<30?0:30; return pad2(d.getHours())+':'+pad2(m); }
+  // ---------- Helpers ----------
+  function fmtNum(n){return Math.round(n).toLocaleString('es-ES');}
+  function fmtDateTime(iso){var d=new Date(iso);return d.toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}
+  function fmtDayShort(ds){var d=new Date(ds+'T00:00');return d.toLocaleString('es-ES',{day:'2-digit',month:'short'});}
+  function fmtDayLong(ds){var d=new Date(ds+'T00:00');return d.toLocaleString('es-ES',{weekday:'long',day:'2-digit',month:'short'});}
+  function pad2(n){return n<10?'0'+n:''+n;}
+  function sortR(r){return r.slice().sort(function(a,b){return new Date(a.ts)-new Date(b.ts);});}
+  function todayVal(){var d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+  function roundedHalf(){var d=new Date();return pad2(d.getHours())+':'+pad2(d.getMinutes()<30?0:30);}
 
   function computeIncrements(readings){
-    var s=sortR(readings), out=[];
+    var s=sortR(readings),out=[];
     for(var i=0;i<s.length;i++){
       var inc=i===0?null:s[i].impressions-s[i-1].impressions;
       var hrs=i===0?null:(new Date(s[i].ts)-new Date(s[i-1].ts))/3600000;
@@ -218,30 +211,144 @@ details summary::-webkit-details-marker{display:none;}
     return out;
   }
 
-  function filterByRange(readings, state){
-    if (!state || state.range === 'all') return readings;
-    var now = new Date();
-    var start, end;
-    if (state.range === '24h'){ start = new Date(now - 24*3600000); end = now; }
-    else if (state.range === '7d'){ start = new Date(now - 7*24*3600000); end = now; }
-    else if (state.range === '30d'){ start = new Date(now - 30*24*3600000); end = now; }
-    else if (state.range === 'custom'){
-      start = state.customStart ? new Date(state.customStart+'T00:00') : new Date(0);
-      end = state.customEnd ? new Date(state.customEnd+'T23:59:59') : now;
-    } else { return readings; }
-    return readings.filter(function(r){ var t=new Date(r.ts); return t>=start && t<=end; });
+  function filterByRange(readings, rangeKey, customStart, customEnd){
+    if(rangeKey==='all') return readings;
+    var now=new Date(), start, end=now;
+    if(rangeKey==='1d') start=new Date(now-86400000);
+    else if(rangeKey==='3d') start=new Date(now-3*86400000);
+    else if(rangeKey==='7d') start=new Date(now-7*86400000);
+    else if(rangeKey==='30d') start=new Date(now-30*86400000);
+    else if(rangeKey==='custom'){
+      start=customStart?new Date(customStart+'T00:00'):new Date(0);
+      end=customEnd?new Date(customEnd+'T23:59:59'):now;
+    } else return readings;
+    return readings.filter(function(r){var t=new Date(r.ts);return t>=start&&t<=end;});
   }
 
+  // ---------- Chart data builders ----------
+  function buildHourlyData(wi){
+    // Una entrada por cada media hora registrada; incremento=null si fue 0 (sin barra/punto)
+    return wi.filter(function(r){return r.increment!==null;}).map(function(r){
+      return { label: fmtDateTime(r.ts), value: r.increment>0?r.increment:null, cumulative: r.impressions, ts: r.ts };
+    });
+  }
+
+  function buildDailyData(wi){
+    var byDay={};
+    wi.filter(function(r){return r.increment!==null&&r.increment>0;}).forEach(function(r){
+      var d=r.ts.slice(0,10);
+      byDay[d]=(byDay[d]||0)+r.increment;
+    });
+    // for cumulative, take last known impression per day
+    var cumByDay={};
+    wi.forEach(function(r){ var d=r.ts.slice(0,10); cumByDay[d]=r.impressions; });
+    var days=Object.keys(byDay).sort();
+    return days.map(function(d){
+      return { label: fmtDayShort(d), value: byDay[d], cumulative: cumByDay[d]||null, ts: d };
+    });
+  }
+
+  // ---------- Chart rendering ----------
+  function accentColor(){ return document.documentElement.getAttribute('data-theme')==='dark'?'#5DCAA5':'#1D9E75'; }
+  function accentAlpha(){ return document.documentElement.getAttribute('data-theme')==='dark'?'rgba(93,202,165,0.12)':'rgba(29,158,117,0.15)'; }
+
+  function renderChart(section, tweetId, wi, rangeKey, granularity, customStart, customEnd){
+    var canvas=section.querySelector('.chart-canvas');
+    var filtered=filterByRange(wi.map(function(r){return {ts:r.ts,impressions:r.impressions,increment:r.increment,hours:r.hours,source:r.source};}), rangeKey, customStart, customEnd);
+    var wiFiltered=computeIncrements(filtered.map(function(r){return{ts:r.ts,impressions:r.impressions,source:r.source};}));
+
+    var points = granularity==='daily' ? buildDailyData(wiFiltered) : buildHourlyData(wiFiltered);
+
+    var labels=points.map(function(p){return p.label;});
+    var data=points.map(function(p){return p.value;});
+    var cumulatives=points.map(function(p){return p.cumulative;});
+
+    var col=accentColor(), alpha=accentAlpha();
+    if(charts[tweetId]) charts[tweetId].destroy();
+
+    charts[tweetId]=new Chart(canvas,{
+      type:'line',
+      data:{
+        labels:labels,
+        datasets:[{
+          label:'Incremento',
+          data:data,
+          borderColor:col,
+          backgroundColor:function(ctx){
+            var chart=ctx.chart, area=chart.chartArea;
+            if(!area) return alpha;
+            var grad=chart.ctx.createLinearGradient(0,area.top,0,area.bottom);
+            grad.addColorStop(0,col.replace(')',',0.3)').replace('rgb','rgba').replace('#5DCAA5','rgba(93,202,165,0.3)').replace('#1D9E75','rgba(29,158,117,0.3)'));
+            grad.addColorStop(1,'rgba(0,0,0,0)');
+            return grad;
+          },
+          fill:true,
+          tension:0.4,
+          pointRadius:4,
+          pointHoverRadius:6,
+          pointBackgroundColor:col,
+          pointBorderColor:'var(--bg)',
+          pointBorderWidth:2,
+          spanGaps:false,
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            callbacks:{
+              title:function(items){return items[0].label;},
+              label:function(ctx){
+                var idx=ctx.dataIndex;
+                var inc=data[idx];
+                var cum=cumulatives[idx];
+                var lines=[];
+                if(inc!==null&&inc!==undefined) lines.push('Incremento: +'+fmtNum(inc));
+                else lines.push('Sin cambio');
+                if(cum!==null&&cum!==undefined) lines.push('Total hasta aquí: '+fmtNum(cum));
+                return lines;
+              }
+            }
+          }
+        },
+        scales:{
+          x:{
+            ticks:{autoSkip:true,maxTicksLimit:10,maxRotation:45,font:{size:11}},
+            grid:{color:'var(--bg-tertiary)'}
+          },
+          y:{
+            beginAtZero:true,
+            ticks:{font:{size:11},callback:function(v){return v!==null?fmtNum(v):'';}},
+            grid:{color:'var(--bg-tertiary)'}
+          }
+        }
+      }
+    });
+  }
+
+  function updateChartTheme(tweetId){
+    if(!charts[tweetId]) return;
+    var col=accentColor();
+    var ds=charts[tweetId].data.datasets[0];
+    ds.borderColor=col;
+    ds.pointBackgroundColor=col;
+    charts[tweetId].update();
+  }
+
+  // ---------- Heatmap ----------
   function distributeToHours(readings){
-    var s=sortR(readings), buckets={};
+    var s=sortR(readings),buckets={};
     for(var i=1;i<s.length;i++){
       var t0=new Date(s[i-1].ts),t1=new Date(s[i].ts);
-      var inc=s[i].impressions-s[i-1].impressions, totalMs=t1-t0;
+      var inc=s[i].impressions-s[i-1].impressions,totalMs=t1-t0;
       if(totalMs<=0||inc<=0) continue;
       var cur=new Date(t0);
       while(cur<t1){
         var nb=new Date(cur.getFullYear(),cur.getMonth(),cur.getDate(),cur.getHours()+1,0,0,0);
-        var se=nb<t1?nb:t1, segMs=se-cur;
+        var se=nb<t1?nb:t1,segMs=se-cur;
         var dk=cur.getFullYear()+'-'+pad2(cur.getMonth()+1)+'-'+pad2(cur.getDate());
         var key=dk+'|'+cur.getHours();
         buckets[key]=(buckets[key]||0)+inc*(segMs/totalMs);
@@ -250,19 +357,14 @@ details summary::-webkit-details-marker{display:none;}
     }
     return buckets;
   }
-
   function buildHeatmap(readings){
-    var b=distributeToHours(readings), ds={};
+    var b=distributeToHours(readings),ds={};
     Object.keys(b).forEach(function(k){ds[k.split('|')[0]]=true;});
-    var days=Object.keys(ds).sort(), ht=new Array(24).fill(0), dh={};
+    var days=Object.keys(ds).sort(),ht=new Array(24).fill(0),dh={};
     days.forEach(function(d){dh[d]=new Array(24).fill(0);});
-    Object.keys(b).forEach(function(k){
-      var p=k.split('|'),d=p[0],h=parseInt(p[1],10);
-      dh[d][h]+=b[k]; ht[h]+=b[k];
-    });
+    Object.keys(b).forEach(function(k){var p=k.split('|'),d=p[0],h=parseInt(p[1],10);dh[d][h]+=b[k];ht[h]+=b[k];});
     return {days:days,hourTotals:ht,dayHour:dh};
   }
-
   function colorFor(v,max){
     if(max<=0) return 'var(--bg-secondary)';
     var r=Math.min(1,v/max);
@@ -271,8 +373,7 @@ details summary::-webkit-details-marker{display:none;}
     var c1=stops[lo],c2=stops[hi];
     return 'rgb('+Math.round(c1.r+(c2.r-c1.r)*t)+','+Math.round(c1.g+(c2.g-c1.g)*t)+','+Math.round(c1.b+(c2.b-c1.b)*t)+')';
   }
-  function textFor(v,max){ return (max>0&&v/max>0.55)?'#04342C':'#085041'; }
-
+  function textFor(v,max){return (max>0&&v/max>0.55)?'#04342C':'#085041';}
   function renderHeatmap(section,readings){
     var hd=buildHeatmap(readings),cw=28,lw=56;
     var gmax=0;
@@ -300,6 +401,7 @@ details summary::-webkit-details-marker{display:none;}
     section.querySelector('.heatmap-row').innerHTML=r;
   }
 
+  // ---------- Daily table ----------
   function renderDailyTable(section,readings){
     var hd=buildHeatmap(readings),body=section.querySelector('.daily-body');
     body.innerHTML='';
@@ -312,45 +414,25 @@ details summary::-webkit-details-marker{display:none;}
     });
   }
 
-  async function fetchAutoReadings(tweetId){
-    try {
-      var resp = await fetch(API_BASE + '/api/get-readings?id=' + encodeURIComponent(tweetId));
-      if (!resp.ok) return [];
-      var data = await resp.json();
-      return (data.readings || []).map(function(r){ return { ts: r.ts, impressions: r.impressions, source: 'auto' }; });
-    } catch(e){ console.error('Error obteniendo lecturas automáticas', e); return []; }
-  }
-  function loadManualReadings(tweetId){
-    try{ var v=localStorage.getItem('manual_readings:'+tweetId); if(v) return JSON.parse(v); }catch(e){}
-    return [];
-  }
-  function saveManualReadings(tweetId, readings){
-    try{ localStorage.setItem('manual_readings:'+tweetId, JSON.stringify(readings)); }catch(e){}
-  }
-  async function loadCombinedReadings(tweetId){
-    var auto = await fetchAutoReadings(tweetId);
-    var manual = loadManualReadings(tweetId);
-    return sortR(auto.concat(manual));
-  }
-
+  // ---------- History ----------
   function renderHistory(section,wi){
     var body=section.querySelector('.history-body'); body.innerHTML='';
     wi.slice().reverse().forEach(function(r){
       var tr=document.createElement('tr'); tr.style.borderTop='0.5px solid var(--border)';
       var il=r.increment===null?'—':(r.increment>=0?'+':'')+fmtNum(r.increment);
-      var origin = r.source === 'manual' ? 'Manual' : 'Automático';
-      tr.innerHTML='<td style="padding:6px 0;">'+fmtDateTime(r.ts)+'</td><td style="padding:6px 0;text-align:right;">'+fmtNum(r.impressions)+'</td><td style="padding:6px 0;text-align:right;">'+il+'</td><td style="padding:6px 0;text-align:right;font-size:12px;color:var(--text-secondary);">'+origin+'</td>';
+      tr.innerHTML='<td style="padding:6px 0;">'+fmtDateTime(r.ts)+'</td><td style="padding:6px 0;text-align:right;">'+fmtNum(r.impressions)+'</td><td style="padding:6px 0;text-align:right;">'+il+'</td><td style="padding:6px 0;text-align:right;font-size:12px;color:var(--text-secondary);">'+(r.source==='manual'?'Manual':'Auto')+'</td>';
       body.appendChild(tr);
     });
   }
 
+  // ---------- Metrics ----------
   function renderMetrics(section,wi,readings){
-    if (wi.length === 0){
-      section.querySelector('.empty-state').style.display = 'block';
-      section.querySelectorAll('.metric-current,.metric-today,.metric-total-increase,.metric-avg-hour,.metric-peak-hour,.metric-avg-day,.metric-avg-week,.metric-last-check').forEach(function(el){ el.textContent = '—'; });
+    if(wi.length===0){
+      section.querySelector('.empty-state').style.display='block';
+      section.querySelectorAll('.metric-current,.metric-today,.metric-total-increase,.metric-avg-hour,.metric-peak-hour,.metric-avg-day,.metric-avg-week,.metric-last-check').forEach(function(el){el.textContent='—';});
       return;
     }
-    section.querySelector('.empty-state').style.display = 'none';
+    section.querySelector('.empty-state').style.display='none';
     var last=wi[wi.length-1],first=wi[0];
     var incs=wi.filter(function(r){return r.increment!==null&&r.hours>0&&r.increment>0;});
     section.querySelector('.metric-current').textContent=fmtNum(last.impressions);
@@ -377,68 +459,29 @@ details summary::-webkit-details-marker{display:none;}
     section.querySelector('.metric-today').textContent='+'+fmtNum(last.impressions-mv);
   }
 
-  
-  function renderChart(section, tweetId, wiFull, rangeKey){
-    var canvas=section.querySelector('.chart-canvas');
-
-    // Usamos TODAS las lecturas (con y sin incremento) para construir el eje de tiempo,
-    // pero la barra solo tiene altura cuando hubo incremento real.
-    var withFirstSkipped = wiFull.filter(function(r){ return r.increment !== null; });
-
-    var labels = withFirstSkipped.map(function(r){
-      return new Date(r.ts).toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-    });
-    var data = withFirstSkipped.map(function(r){
-      return (r.increment > 0) ? r.increment : null; // null = sin barra, pero conserva el espacio en el eje
-    });
-    var cumulative = withFirstSkipped.map(function(r){ return r.impressions; });
-
-    var pointCount = withFirstSkipped.length;
-    // Ancho de barra dinámico: con muchos puntos, las barras se hacen más finas para que todo quepa
-    var barThickness = pointCount > 400 ? 1 : pointCount > 150 ? 2 : pointCount > 60 ? 4 : undefined;
-
-    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    var barColor = isDark ? '#5DCAA5' : '#1D9E75';
-    if(charts[tweetId]) charts[tweetId].destroy();
-
-    var datasetConfig = { label:'Incremento', data:data, backgroundColor:barColor, borderRadius:2 };
-    if (barThickness) datasetConfig.barThickness = barThickness;
-
-    charts[tweetId]=new Chart(canvas,{
-      type:'bar',
-      data:{ labels:labels, datasets:[datasetConfig] },
-      options:{
-        responsive:true,
-        maintainAspectRatio:false,
-        plugins:{
-          legend:{ display:false },
-          tooltip:{
-            callbacks:{
-              label: function(ctx){
-                var idx = ctx.dataIndex;
-                var inc = data[idx];
-                var total = cumulative[idx];
-                var incLabel = inc ? ('+' + fmtNum(inc)) : 'Sin cambio';
-                return incLabel + ' · Total: ' + fmtNum(total);
-              }
-            }
-          }
-        },
-        scales:{
-          x:{ ticks:{ autoSkip:true, maxTicksLimit:14, maxRotation:45, font:{size:11} } },
-          y:{ beginAtZero:true, ticks:{ font:{size:11}, callback:function(v){return fmtNum(v);} } }
-        }
-      }
-    });
+  // ---------- Data fetching ----------
+  async function fetchAutoReadings(tweetId){
+    try{
+      var resp=await fetch(API_BASE+'/api/get-readings?id='+encodeURIComponent(tweetId));
+      if(!resp.ok) return [];
+      var data=await resp.json();
+      return (data.readings||[]).map(function(r){return{ts:r.ts,impressions:r.impressions,source:'auto'};});
+    }catch(e){return [];}
+  }
+  function loadManualReadings(tweetId){
+    try{var v=localStorage.getItem('manual_readings:'+tweetId);if(v)return JSON.parse(v);}catch(e){}
+    return [];
+  }
+  function saveManualReadings(tweetId,readings){
+    try{localStorage.setItem('manual_readings:'+tweetId,JSON.stringify(readings));}catch(e){}
+  }
+  async function loadCombinedReadings(tweetId){
+    var auto=await fetchAutoReadings(tweetId);
+    var manual=loadManualReadings(tweetId);
+    return sortR(auto.concat(manual));
   }
 
-  function renderChartColors(tweetId){
-    if (!charts[tweetId]) return;
-    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    charts[tweetId].data.datasets[0].backgroundColor = isDark ? '#5DCAA5' : '#1D9E75';
-    charts[tweetId].update();
-  }
-
+  // ---------- Tabs ----------
   function setupTabs(section){
     var btns=section.querySelectorAll('.tab-btn'),panels=section.querySelectorAll('.tab-panel');
     btns.forEach(function(btn){
@@ -450,45 +493,18 @@ details summary::-webkit-details-marker{display:none;}
     });
   }
 
-  function populateTimeSelect(selectEl, presetValue){
-    selectEl.innerHTML = '';
-    for (var h = 0; h < 24; h++){
-      [0,30].forEach(function(m){
-        var val = pad2(h) + ':' + pad2(m);
-        var opt = document.createElement('option');
-        opt.value = val; opt.textContent = val;
-        if (val === presetValue) opt.selected = true;
-        selectEl.appendChild(opt);
-      });
-    }
+  // ---------- Time input ----------
+  function populateTimeSelect(sel,preset){
+    sel.innerHTML='';
+    for(var h=0;h<24;h++){[0,30].forEach(function(m){
+      var val=pad2(h)+':'+pad2(m),opt=document.createElement('option');
+      opt.value=val;opt.textContent=val;if(val===preset)opt.selected=true;
+      sel.appendChild(opt);
+    });}
   }
 
-  function setupRangeControls(section, tweetId, onChange){
-    var btns = section.querySelectorAll('.range-btn');
-    var customInputs = section.querySelector('.custom-range-inputs');
-    var startInput = section.querySelector('.range-start');
-    var endInput = section.querySelector('.range-end');
-
-    btns.forEach(function(btn){
-      btn.addEventListener('click', function(){
-        btns.forEach(function(b){ b.classList.remove('active'); });
-        btn.classList.add('active');
-        var range = btn.dataset.range;
-        sectionState[tweetId].range = range;
-        customInputs.style.display = range === 'custom' ? 'inline-flex' : 'none';
-        if (range !== 'custom') onChange();
-      });
-    });
-    [startInput, endInput].forEach(function(inp){
-      inp.addEventListener('change', function(){
-        sectionState[tweetId].customStart = startInput.value;
-        sectionState[tweetId].customEnd = endInput.value;
-        if (startInput.value && endInput.value) onChange();
-      });
-    });
-  }
-
-  async function renderTweetSection(tweet, container){
+  // ---------- Section setup ----------
+  async function renderTweetSection(tweet,container){
     var tpl=document.getElementById('tweet-section-template');
     var section=tpl.content.firstElementChild.cloneNode(true);
     section.querySelector('.avatar').textContent=tweet.avatarLetters;
@@ -499,70 +515,83 @@ details summary::-webkit-details-marker{display:none;}
     container.appendChild(section);
     setupTabs(section);
 
-    sectionState[tweet.id] = { range: 'all', customStart: null, customEnd: null };
+    sectionState[tweet.id]={range:'30d',granularity:'hourly',customStart:null,customEnd:null};
 
-    section.querySelector('.input-date').value = todayDateInputValue();
-    populateTimeSelect(section.querySelector('.input-time'), roundedNowHalfHour());
+    section.querySelector('.input-date').value=todayVal();
+    populateTimeSelect(section.querySelector('.input-time'),roundedHalf());
 
-    var latestReadings = [];
+    var latestReadings=[];
+
+    function updateChart(){
+      var st=sectionState[tweet.id];
+      var wi=computeIncrements(latestReadings);
+      renderChart(section,tweet.id,wi,st.range,st.granularity,st.customStart,st.customEnd);
+    }
 
     async function refresh(){
-      latestReadings = await loadCombinedReadings(tweet.id);
-      var wiFull = computeIncrements(latestReadings);
-      renderMetrics(section, wiFull, latestReadings);
-      renderHistory(section, wiFull);
-      renderHeatmap(section, latestReadings);
-      renderDailyTable(section, latestReadings);
+      latestReadings=await loadCombinedReadings(tweet.id);
+      var wi=computeIncrements(latestReadings);
+      renderMetrics(section,wi,latestReadings);
+      renderHistory(section,wi);
+      renderHeatmap(section,latestReadings);
+      renderDailyTable(section,latestReadings);
       updateChart();
     }
 
-    function updateChart(){
-      var state = sectionState[tweet.id];
-      var filtered = filterByRange(latestReadings, state);
-      var wiFiltered = computeIncrements(filtered);
-      renderChart(section, tweet.id, wiFiltered, state.range);
-    }
-
-    setupRangeControls(section, tweet.id, updateChart);
+    // Range & granularity selects
+    section.querySelector('.select-range').addEventListener('change',function(){
+      var val=this.value;
+      sectionState[tweet.id].range=val;
+      var customInputs=section.querySelector('.custom-range-inputs');
+      customInputs.style.display=val==='custom'?'inline-flex':'none';
+      if(val!=='custom') updateChart();
+    });
+    section.querySelector('.select-granularity').addEventListener('change',function(){
+      sectionState[tweet.id].granularity=this.value;
+      updateChart();
+    });
+    var startInp=section.querySelector('.range-start'),endInp=section.querySelector('.range-end');
+    [startInp,endInp].forEach(function(inp){
+      inp.addEventListener('change',function(){
+        sectionState[tweet.id].customStart=startInp.value;
+        sectionState[tweet.id].customEnd=endInp.value;
+        if(startInp.value&&endInp.value) updateChart();
+      });
+    });
 
     await refresh();
-    setInterval(refresh, AUTO_REFRESH_MS);
+    setInterval(refresh,AUTO_REFRESH_MS);
 
-    section.querySelector('.add-reading-form').addEventListener('submit', async function(e){
+    // Manual form
+    section.querySelector('.add-reading-form').addEventListener('submit',async function(e){
       e.preventDefault();
-      var err=section.querySelector('.form-error'); err.style.display='none';
-      var dateVal = section.querySelector('.input-date').value;
-      var timeVal = section.querySelector('.input-time').value;
-      var imp = section.querySelector('.input-impressions').value;
-      if(!dateVal || !timeVal || imp==='') return;
-
-      var ni = parseInt(imp,10);
-      var combined = await loadCombinedReadings(tweet.id);
-      var last = combined.length ? combined[combined.length-1] : null;
-
-      if (last && ni < last.impressions){
-        err.textContent = 'No puede ser menor que la última lectura (' + fmtNum(last.impressions) + ').';
-        err.style.display = 'block';
+      var err=section.querySelector('.form-error');err.style.display='none';
+      var dateVal=section.querySelector('.input-date').value;
+      var timeVal=section.querySelector('.input-time').value;
+      var imp=section.querySelector('.input-impressions').value;
+      if(!dateVal||!timeVal||imp==='') return;
+      var ni=parseInt(imp,10);
+      var combined=await loadCombinedReadings(tweet.id);
+      var last=combined.length?combined[combined.length-1]:null;
+      if(last&&ni<last.impressions){
+        err.textContent='No puede ser menor que la última lectura ('+fmtNum(last.impressions)+').';
+        err.style.display='block';
         return;
       }
-
-      var manual = loadManualReadings(tweet.id);
-      manual.push({ ts: dateVal + 'T' + timeVal, impressions: ni, source: 'manual' });
-      saveManualReadings(tweet.id, manual);
+      var manual=loadManualReadings(tweet.id);
+      manual.push({ts:dateVal+'T'+timeVal,impressions:ni,source:'manual'});
+      saveManualReadings(tweet.id,manual);
       await refresh();
-
-      section.querySelector('.input-date').value = todayDateInputValue();
-      populateTimeSelect(section.querySelector('.input-time'), roundedNowHalfHour());
-      section.querySelector('.input-impressions').value = '';
+      section.querySelector('.input-date').value=todayVal();
+      populateTimeSelect(section.querySelector('.input-time'),roundedHalf());
+      section.querySelector('.input-impressions').value='';
     });
   }
 
   async function init(){
     initTheme();
     var container=document.getElementById('tweets-container');
-    for(var i=0;i<TWEETS.length;i++){
-      await renderTweetSection(TWEETS[i], container);
-    }
+    for(var i=0;i<TWEETS.length;i++) await renderTweetSection(TWEETS[i],container);
   }
   init();
 })();
