@@ -227,9 +227,8 @@ details summary::-webkit-details-marker{display:none;}
 
   // ---------- Chart data builders ----------
   function buildHourlyData(wi){
-    // Una entrada por cada media hora registrada; incremento=null si fue 0 (sin barra/punto)
     return wi.filter(function(r){return r.increment!==null;}).map(function(r){
-      return { label: fmtDateTime(r.ts), value: r.increment>0?r.increment:null, cumulative: r.impressions, ts: r.ts };
+      return { label: fmtDateTime(r.ts), value: r.increment>0?r.increment:0, cumulative: r.impressions, ts: r.ts };
     });
   }
 
@@ -289,7 +288,7 @@ details summary::-webkit-details-marker{display:none;}
           pointBackgroundColor:col,
           pointBorderColor:'var(--bg)',
           pointBorderWidth:2,
-          spanGaps:false,
+          spanGaps:true,
         }]
       },
       options:{
@@ -306,7 +305,7 @@ details summary::-webkit-details-marker{display:none;}
                 var inc=data[idx];
                 var cum=cumulatives[idx];
                 var lines=[];
-                if(inc!==null&&inc!==undefined) lines.push('Incremento: +'+fmtNum(inc));
+                if(inc!==null&&inc!==undefined&&inc>0) lines.push('Incremento: +'+fmtNum(inc));
                 else lines.push('Sin cambio');
                 if(cum!==null&&cum!==undefined) lines.push('Total hasta aquí: '+fmtNum(cum));
                 return lines;
