@@ -77,6 +77,7 @@ details summary::-webkit-details-marker{display:none;}
       <div class="metric-card"><p>Hora pico</p><p class="metric-peak-hour">—</p></div>
       <div class="metric-card"><p>Promedio por día</p><p class="metric-avg-day">—</p></div>
       <div class="metric-card"><p>Promedio por semana</p><p class="metric-avg-week">—</p></div>
+      <div class="metric-card"><p>Racha actual</p><p class="metric-streak">—</p></div>
     </div>
     <p class="avg-disclaimer" style="font-size:12px;color:var(--text-secondary);margin:0 0 1.5rem;"></p>
     <p class="empty-state" style="font-size:13px;color:var(--text-secondary);margin:0 0 1.5rem;display:none;">Aún no hay lecturas. Espera el próximo ciclo automático (cada 30 min).</p>
@@ -253,10 +254,15 @@ details summary::-webkit-details-marker{display:none;}
 
   function renderChart(section, tweetId, wi, rangeKey, granularity, customStart, customEnd){
     var canvas=section.querySelector('.chart-canvas');
-    var filtered=filterByRange(wi.map(function(r){return {ts:r.ts,impressions:r.impressions,increment:r.increment,hours:r.hours,source:r.source};}), rangeKey, customStart, customEnd);
-    var wiFiltered=computeIncrements(filtered.map(function(r){return{ts:r.ts,impressions:r.impressions,source:r.source};}));
 
-    var points = granularity==='daily' ? buildDailyData(wiFiltered) : buildHourlyData(wiFiltered);
+    // Filtramos las lecturas ya con incrementos calculados sobre el conjunto completo
+    // (no recalculamos desde cero sobre un subconjunto, lo que generaría saltos artificiales)
+    var filtered = filterByRange(
+      wi.map(function(r){return{ts:r.ts,impressions:r.impressions,increment:r.increment,hours:r.hours,source:r.source};}),
+      rangeKey, customStart, customEnd
+    );
+
+    var points = granularity==='daily' ? buildDailyData(filtered) : buildHourlyData(filtered);
 
     var labels=points.map(function(p){return p.label;});
     var data=points.map(function(p){return p.value;});
@@ -424,11 +430,33 @@ details summary::-webkit-details-marker{display:none;}
     });
   }
 
-  // ---------- Metrics ----------
+  function calcStreak(readings){
+    // días que tuvieron al menos 1 incremento real
+    var wi = computeIncrements(readings);
+    var daysWithInc = {};
+    wi.filter(function(r){ return r.increment !== null && r.increment > 0; }).forEach(function(r){
+      daysWithInc[r.ts.slice(0,10)] = true;
+    });
+    var today = new Date();
+    var todayStr = today.getFullYear()+'-'+pad2(today.getMonth()+1)+'-'+pad2(today.getDate());
+    var yesterday = new Date(today - 86400000);
+    var yesterdayStr = yesterday.getFullYear()+'-'+pad2(yesterday.getMonth()+1)+'-'+pad2(yesterday.getDate());
+    // si hoy ya tiene incremento, empezamos desde hoy; si no, desde ayer
+    var startStr = daysWithInc[todayStr] ? todayStr : yesterdayStr;
+    var streak = 0;
+    var cur = new Date(startStr+'T12:00:00');
+    while(true){
+      var curStr = cur.getFullYear()+'-'+pad2(cur.getMonth()+1)+'-'+pad2(cur.getDate());
+      if(!daysWithInc[curStr]) break;
+      streak++;
+      cur = new Date(cur - 86400000);
+    }
+    return streak;
+  }
   function renderMetrics(section,wi,readings){
     if(wi.length===0){
       section.querySelector('.empty-state').style.display='block';
-      section.querySelectorAll('.metric-current,.metric-today,.metric-total-increase,.metric-avg-hour,.metric-peak-hour,.metric-avg-day,.metric-avg-week,.metric-last-check').forEach(function(el){el.textContent='—';});
+      section.querySelectorAll('.metric-current,.metric-today,.metric-total-increase,.metric-avg-hour,.metric-peak-hour,.metric-avg-day,.metric-avg-week,.metric-last-check,.metric-streak').forEach(function(el){el.textContent='—';});
       return;
     }
     section.querySelector('.empty-state').style.display='none';
@@ -453,6 +481,8 @@ details summary::-webkit-details-marker{display:none;}
     section.querySelector('.metric-avg-day').textContent='+'+fmtNum(apd);
     section.querySelector('.metric-avg-week').textContent='+'+fmtNum(apd*7);
     section.querySelector('.avg-disclaimer').textContent='Promedios sobre '+spanDays+' día'+(spanDays===1?'':'s')+' (semanal = proyección).';
+    var streak = calcStreak(readings);
+    section.querySelector('.metric-streak').textContent = streak > 0 ? streak + (streak===1?' día':' días') : '—';
     var s=sortR(readings),ldate=new Date(ld.getFullYear(),ld.getMonth(),ld.getDate()),mv=s[0].impressions;
     for(var i=0;i<s.length;i++){var rd=new Date(s[i].ts),rdo=new Date(rd.getFullYear(),rd.getMonth(),rd.getDate());if(rdo<ldate){mv=s[i].impressions;}else{break;}}
     section.querySelector('.metric-today').textContent='+'+fmtNum(last.impressions-mv);
