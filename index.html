@@ -17,16 +17,8 @@
 }
 body{font-family:system-ui,-apple-system,sans-serif;color:var(--text-primary);background:var(--bg);padding:2rem;max-width:960px;margin:0 auto;transition:background .2s,color .2s;}
 h1{font-size:1.5rem;font-weight:600;}
-select,input[type="date"],input[type="number"]{
-  background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);
-  padding:8px 12px;font-size:14px;color:var(--text-primary);width:100%;
-}
-.chart-select{
-  appearance:none;-webkit-appearance:none;
-  background:var(--bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 10px center;
-  border:1px solid var(--border);border-radius:var(--radius);padding:6px 32px 6px 12px;
-  font-size:13px;color:var(--text-primary);cursor:pointer;width:auto;
-}
+select,input[type="date"],input[type="number"]{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;font-size:14px;color:var(--text-primary);width:100%;}
+.chart-select{appearance:none;-webkit-appearance:none;background:var(--bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 10px center;border:1px solid var(--border);border-radius:var(--radius);padding:6px 32px 6px 12px;font-size:13px;color:var(--text-primary);cursor:pointer;width:auto;}
 .chart-select:hover{border-color:var(--accent);}
 button[type="submit"]{background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:9px 16px;font-size:14px;cursor:pointer;}
 button[type="submit"]:hover{opacity:.9;}
@@ -39,7 +31,7 @@ details summary::-webkit-details-marker{display:none;}
 .metric-card{background:var(--bg-secondary);border-radius:var(--radius);padding:1rem;}
 .metric-card p:first-child{font-size:13px;color:var(--text-secondary);margin:0 0 4px;}
 .metric-card p:last-child{font-size:24px;font-weight:500;margin:0;}
-.metric-card.highlight p:last-child{font-size:20px;}
+.metric-card.sm p:last-child{font-size:18px;}
 </style>
 </head>
 <body>
@@ -70,7 +62,7 @@ details summary::-webkit-details-marker{display:none;}
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:0.75rem;">
       <div class="metric-card"><p>Impresiones actuales</p><p class="metric-current">—</p></div>
-      <div class="metric-card highlight"><p>Última revisión</p><p class="metric-last-check">—</p></div>
+      <div class="metric-card sm"><p>Última revisión</p><p class="metric-last-check">—</p></div>
       <div class="metric-card"><p>Hoy</p><p class="metric-today">—</p></div>
       <div class="metric-card"><p>Incremento total</p><p class="metric-total-increase">—</p></div>
       <div class="metric-card"><p>Promedio por hora</p><p class="metric-avg-hour">—</p></div>
@@ -96,16 +88,17 @@ details summary::-webkit-details-marker{display:none;}
           <option value="7d">Última semana</option>
           <option value="30d" selected>Último mes</option>
           <option value="all">Todo</option>
+          <option value="custom">Rango manual</option>
         </select>
         <select class="chart-select select-granularity">
           <option value="hourly" selected>Por hora</option>
           <option value="daily">Por día</option>
         </select>
-        <div class="custom-range-inputs" style="display:none;gap:6px;align-items:center;">
+        <span class="custom-range-inputs" style="display:none;gap:6px;align-items:center;">
           <input type="date" class="range-start" style="width:auto;">
           <span style="color:var(--text-secondary);font-size:13px;">a</span>
           <input type="date" class="range-end" style="width:auto;">
-        </div>
+        </span>
       </div>
       <div style="position:relative;height:240px;">
         <canvas class="chart-canvas"></canvas>
@@ -176,7 +169,6 @@ details summary::-webkit-details-marker{display:none;}
   var AUTO_REFRESH_MS = 60000;
   var sectionState = {};
 
-  // ---------- Theme ----------
   function initTheme(){
     var saved=null; try{saved=localStorage.getItem('theme');}catch(e){}
     applyTheme(saved||'light');
@@ -192,12 +184,25 @@ details summary::-webkit-details-marker{display:none;}
     applyTheme(cur==='dark'?'light':'dark');
   });
 
-  // ---------- Helpers ----------
   function fmtNum(n){return Math.round(n).toLocaleString('es-ES');}
   function fmtDateTime(iso){var d=new Date(iso);return d.toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}
-  function fmtDayShort(ds){var d=new Date(ds+'T00:00');return d.toLocaleString('es-ES',{day:'2-digit',month:'short'});}
-  function fmtDayLong(ds){var d=new Date(ds+'T00:00');return d.toLocaleString('es-ES',{weekday:'long',day:'2-digit',month:'short'});}
+  function fmtDayShort(dateStr){
+    // dateStr es 'YYYY-MM-DD', lo parseamos como fecha local
+    var parts=dateStr.split('-');
+    var d=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+    return d.toLocaleString('es-ES',{day:'2-digit',month:'short'});
+  }
+  function fmtDayLong(dateStr){
+    var parts=dateStr.split('-');
+    var d=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+    return d.toLocaleString('es-ES',{weekday:'long',day:'2-digit',month:'short'});
+  }
   function pad2(n){return n<10?'0'+n:''+n;}
+  function localDateKey(ts){
+    // Convierte timestamp ISO a clave de fecha LOCAL (YYYY-MM-DD)
+    var d=new Date(ts);
+    return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+  }
   function sortR(r){return r.slice().sort(function(a,b){return new Date(a.ts)-new Date(b.ts);});}
   function todayVal(){var d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
   function roundedHalf(){var d=new Date();return pad2(d.getHours())+':'+pad2(d.getMinutes()<30?0:30);}
@@ -212,8 +217,8 @@ details summary::-webkit-details-marker{display:none;}
     return out;
   }
 
-  function filterByRange(readings, rangeKey, customStart, customEnd){
-    if(rangeKey==='all') return readings;
+  function filterByRange(wi, rangeKey, customStart, customEnd){
+    if(rangeKey==='all') return wi;
     var now=new Date(), start, end=now;
     if(rangeKey==='1d') start=new Date(now-86400000);
     else if(rangeKey==='3d') start=new Date(now-3*86400000);
@@ -222,113 +227,85 @@ details summary::-webkit-details-marker{display:none;}
     else if(rangeKey==='custom'){
       start=customStart?new Date(customStart+'T00:00'):new Date(0);
       end=customEnd?new Date(customEnd+'T23:59:59'):now;
-    } else return readings;
-    return readings.filter(function(r){var t=new Date(r.ts);return t>=start&&t<=end;});
+    } else return wi;
+    return wi.filter(function(r){var t=new Date(r.ts);return t>=start&&t<=end;});
   }
 
-  // ---------- Chart data builders ----------
+  // Usa fecha LOCAL en todos lados para consistencia con la tabla y el heatmap
   function buildHourlyData(wi){
     return wi.filter(function(r){return r.increment!==null;}).map(function(r){
-      return { label: fmtDateTime(r.ts), value: r.increment>0?r.increment:0, cumulative: r.impressions, ts: r.ts };
+      return { label:fmtDateTime(r.ts), value:r.increment>0?r.increment:0, cumulative:r.impressions, ts:r.ts };
     });
   }
 
   function buildDailyData(wi){
-    var byDay={};
+    var byDay={}, cumByDay={};
     wi.filter(function(r){return r.increment!==null&&r.increment>0;}).forEach(function(r){
-      var d=r.ts.slice(0,10);
-      byDay[d]=(byDay[d]||0)+r.increment;
+      var dk=localDateKey(r.ts); // fecha LOCAL
+      byDay[dk]=(byDay[dk]||0)+r.increment;
     });
-    // for cumulative, take last known impression per day
-    var cumByDay={};
-    wi.forEach(function(r){ var d=r.ts.slice(0,10); cumByDay[d]=r.impressions; });
+    wi.forEach(function(r){
+      var dk=localDateKey(r.ts);
+      cumByDay[dk]=r.impressions;
+    });
     var days=Object.keys(byDay).sort();
     return days.map(function(d){
-      return { label: fmtDayShort(d), value: byDay[d], cumulative: cumByDay[d]||null, ts: d };
+      return { label:fmtDayShort(d), value:byDay[d], cumulative:cumByDay[d]||null, ts:d };
     });
   }
 
-  // ---------- Chart rendering ----------
-  function accentColor(){ return document.documentElement.getAttribute('data-theme')==='dark'?'#5DCAA5':'#1D9E75'; }
-  function accentAlpha(){ return document.documentElement.getAttribute('data-theme')==='dark'?'rgba(93,202,165,0.12)':'rgba(29,158,117,0.15)'; }
+  function accentColor(){return document.documentElement.getAttribute('data-theme')==='dark'?'#5DCAA5':'#1D9E75';}
 
   function renderChart(section, tweetId, wi, rangeKey, granularity, customStart, customEnd){
     var canvas=section.querySelector('.chart-canvas');
-
-    // Filtramos las lecturas ya con incrementos calculados sobre el conjunto completo
-    // (no recalculamos desde cero sobre un subconjunto, lo que generaría saltos artificiales)
-    var filtered = filterByRange(
-      wi.map(function(r){return{ts:r.ts,impressions:r.impressions,increment:r.increment,hours:r.hours,source:r.source};}),
-      rangeKey, customStart, customEnd
-    );
-
-    var points = granularity==='daily' ? buildDailyData(filtered) : buildHourlyData(filtered);
+    // Filtrar el wi completo (con incrementos calculados sobre todo el historial)
+    var filtered=filterByRange(wi, rangeKey, customStart, customEnd);
+    var points=granularity==='daily'?buildDailyData(filtered):buildHourlyData(filtered);
 
     var labels=points.map(function(p){return p.label;});
     var data=points.map(function(p){return p.value;});
     var cumulatives=points.map(function(p){return p.cumulative;});
 
-    var col=accentColor(), alpha=accentAlpha();
+    var col=accentColor();
     if(charts[tweetId]) charts[tweetId].destroy();
 
     charts[tweetId]=new Chart(canvas,{
       type:'line',
-      data:{
-        labels:labels,
-        datasets:[{
-          label:'Incremento',
-          data:data,
-          borderColor:col,
-          backgroundColor:function(ctx){
-            var chart=ctx.chart, area=chart.chartArea;
-            if(!area) return alpha;
-            var grad=chart.ctx.createLinearGradient(0,area.top,0,area.bottom);
-            grad.addColorStop(0,col.replace(')',',0.3)').replace('rgb','rgba').replace('#5DCAA5','rgba(93,202,165,0.3)').replace('#1D9E75','rgba(29,158,117,0.3)'));
-            grad.addColorStop(1,'rgba(0,0,0,0)');
-            return grad;
-          },
-          fill:true,
-          tension:0.4,
-          pointRadius:4,
-          pointHoverRadius:6,
-          pointBackgroundColor:col,
-          pointBorderColor:'var(--bg)',
-          pointBorderWidth:2,
-          spanGaps:true,
-        }]
-      },
+      data:{labels:labels,datasets:[{
+        label:'Incremento',data:data,
+        borderColor:col,
+        backgroundColor:function(ctx){
+          var chart=ctx.chart,area=chart.chartArea;
+          if(!area) return 'rgba(29,158,117,0.15)';
+          var grad=chart.ctx.createLinearGradient(0,area.top,0,area.bottom);
+          var isDark=document.documentElement.getAttribute('data-theme')==='dark';
+          grad.addColorStop(0,isDark?'rgba(93,202,165,0.25)':'rgba(29,158,117,0.25)');
+          grad.addColorStop(1,'rgba(0,0,0,0)');
+          return grad;
+        },
+        fill:true,tension:0.4,
+        pointRadius:4,pointHoverRadius:6,
+        pointBackgroundColor:col,pointBorderColor:'var(--bg)',pointBorderWidth:2,
+        spanGaps:true
+      }]},
       options:{
-        responsive:true,
-        maintainAspectRatio:false,
+        responsive:true,maintainAspectRatio:false,
         interaction:{mode:'index',intersect:false},
         plugins:{
           legend:{display:false},
-          tooltip:{
-            callbacks:{
-              title:function(items){return items[0].label;},
-              label:function(ctx){
-                var idx=ctx.dataIndex;
-                var inc=data[idx];
-                var cum=cumulatives[idx];
-                var lines=[];
-                if(inc!==null&&inc!==undefined&&inc>0) lines.push('Incremento: +'+fmtNum(inc));
-                else lines.push('Sin cambio');
-                if(cum!==null&&cum!==undefined) lines.push('Total hasta aquí: '+fmtNum(cum));
-                return lines;
-              }
+          tooltip:{callbacks:{
+            title:function(items){return items[0].label;},
+            label:function(ctx){
+              var idx=ctx.dataIndex,inc=data[idx],cum=cumulatives[idx],lines=[];
+              lines.push(inc>0?'Incremento: +'+fmtNum(inc):'Sin cambio');
+              if(cum!=null) lines.push('Total hasta aquí: '+fmtNum(cum));
+              return lines;
             }
-          }
+          }}
         },
         scales:{
-          x:{
-            ticks:{autoSkip:true,maxTicksLimit:10,maxRotation:45,font:{size:11}},
-            grid:{color:'var(--bg-tertiary)'}
-          },
-          y:{
-            beginAtZero:true,
-            ticks:{font:{size:11},callback:function(v){return v!==null?fmtNum(v):'';}},
-            grid:{color:'var(--bg-tertiary)'}
-          }
+          x:{ticks:{autoSkip:true,maxTicksLimit:10,maxRotation:45,font:{size:11}},grid:{color:'var(--bg-tertiary)'}},
+          y:{beginAtZero:true,ticks:{font:{size:11},callback:function(v){return fmtNum(v);}},grid:{color:'var(--bg-tertiary)'}}
         }
       }
     });
@@ -338,12 +315,10 @@ details summary::-webkit-details-marker{display:none;}
     if(!charts[tweetId]) return;
     var col=accentColor();
     var ds=charts[tweetId].data.datasets[0];
-    ds.borderColor=col;
-    ds.pointBackgroundColor=col;
+    ds.borderColor=col; ds.pointBackgroundColor=col;
     charts[tweetId].update();
   }
 
-  // ---------- Heatmap ----------
   function distributeToHours(readings){
     var s=sortR(readings),buckets={};
     for(var i=1;i<s.length;i++){
@@ -354,7 +329,7 @@ details summary::-webkit-details-marker{display:none;}
       while(cur<t1){
         var nb=new Date(cur.getFullYear(),cur.getMonth(),cur.getDate(),cur.getHours()+1,0,0,0);
         var se=nb<t1?nb:t1,segMs=se-cur;
-        var dk=cur.getFullYear()+'-'+pad2(cur.getMonth()+1)+'-'+pad2(cur.getDate());
+        var dk=localDateKey(cur.toISOString()); // fecha LOCAL
         var key=dk+'|'+cur.getHours();
         buckets[key]=(buckets[key]||0)+inc*(segMs/totalMs);
         cur=se;
@@ -362,6 +337,7 @@ details summary::-webkit-details-marker{display:none;}
     }
     return buckets;
   }
+
   function buildHeatmap(readings){
     var b=distributeToHours(readings),ds={};
     Object.keys(b).forEach(function(k){ds[k.split('|')[0]]=true;});
@@ -370,6 +346,7 @@ details summary::-webkit-details-marker{display:none;}
     Object.keys(b).forEach(function(k){var p=k.split('|'),d=p[0],h=parseInt(p[1],10);dh[d][h]+=b[k];ht[h]+=b[k];});
     return {days:days,hourTotals:ht,dayHour:dh};
   }
+
   function colorFor(v,max){
     if(max<=0) return 'var(--bg-secondary)';
     var r=Math.min(1,v/max);
@@ -379,6 +356,7 @@ details summary::-webkit-details-marker{display:none;}
     return 'rgb('+Math.round(c1.r+(c2.r-c1.r)*t)+','+Math.round(c1.g+(c2.g-c1.g)*t)+','+Math.round(c1.b+(c2.b-c1.b)*t)+')';
   }
   function textFor(v,max){return (max>0&&v/max>0.55)?'#04342C':'#085041';}
+
   function renderHeatmap(section,readings){
     var hd=buildHeatmap(readings),cw=28,lw=56;
     var gmax=0;
@@ -406,7 +384,6 @@ details summary::-webkit-details-marker{display:none;}
     section.querySelector('.heatmap-row').innerHTML=r;
   }
 
-  // ---------- Daily table ----------
   function renderDailyTable(section,readings){
     var hd=buildHeatmap(readings),body=section.querySelector('.daily-body');
     body.innerHTML='';
@@ -419,7 +396,6 @@ details summary::-webkit-details-marker{display:none;}
     });
   }
 
-  // ---------- History ----------
   function renderHistory(section,wi){
     var body=section.querySelector('.history-body'); body.innerHTML='';
     wi.slice().reverse().forEach(function(r){
@@ -431,28 +407,28 @@ details summary::-webkit-details-marker{display:none;}
   }
 
   function calcStreak(readings){
-    // días que tuvieron al menos 1 incremento real
-    var wi = computeIncrements(readings);
-    var daysWithInc = {};
-    wi.filter(function(r){ return r.increment !== null && r.increment > 0; }).forEach(function(r){
-      daysWithInc[r.ts.slice(0,10)] = true;
+    var wi=computeIncrements(readings);
+    var daysWithInc={};
+    wi.filter(function(r){return r.increment!==null&&r.increment>0;}).forEach(function(r){
+      daysWithInc[localDateKey(r.ts)]=true;
     });
-    var today = new Date();
-    var todayStr = today.getFullYear()+'-'+pad2(today.getMonth()+1)+'-'+pad2(today.getDate());
-    var yesterday = new Date(today - 86400000);
-    var yesterdayStr = yesterday.getFullYear()+'-'+pad2(yesterday.getMonth()+1)+'-'+pad2(yesterday.getDate());
-    // si hoy ya tiene incremento, empezamos desde hoy; si no, desde ayer
-    var startStr = daysWithInc[todayStr] ? todayStr : yesterdayStr;
-    var streak = 0;
-    var cur = new Date(startStr+'T12:00:00');
+    var today=new Date();
+    var todayStr=localDateKey(today.toISOString());
+    var yesterday=new Date(today-86400000);
+    var yesterdayStr=localDateKey(yesterday.toISOString());
+    var startStr=daysWithInc[todayStr]?todayStr:yesterdayStr;
+    var streak=0;
+    var cur=new Date(startStr+'T12:00:00');
     while(true){
-      var curStr = cur.getFullYear()+'-'+pad2(cur.getMonth()+1)+'-'+pad2(cur.getDate());
+      var curStr=localDateKey(cur.toISOString());
       if(!daysWithInc[curStr]) break;
       streak++;
-      cur = new Date(cur - 86400000);
+      cur=new Date(cur-86400000);
+      if(streak>3650) break; // safety
     }
     return streak;
   }
+
   function renderMetrics(section,wi,readings){
     if(wi.length===0){
       section.querySelector('.empty-state').style.display='block';
@@ -481,14 +457,13 @@ details summary::-webkit-details-marker{display:none;}
     section.querySelector('.metric-avg-day').textContent='+'+fmtNum(apd);
     section.querySelector('.metric-avg-week').textContent='+'+fmtNum(apd*7);
     section.querySelector('.avg-disclaimer').textContent='Promedios sobre '+spanDays+' día'+(spanDays===1?'':'s')+' (semanal = proyección).';
-    var streak = calcStreak(readings);
-    section.querySelector('.metric-streak').textContent = streak > 0 ? streak + (streak===1?' día':' días') : '—';
     var s=sortR(readings),ldate=new Date(ld.getFullYear(),ld.getMonth(),ld.getDate()),mv=s[0].impressions;
     for(var i=0;i<s.length;i++){var rd=new Date(s[i].ts),rdo=new Date(rd.getFullYear(),rd.getMonth(),rd.getDate());if(rdo<ldate){mv=s[i].impressions;}else{break;}}
     section.querySelector('.metric-today').textContent='+'+fmtNum(last.impressions-mv);
+    var streak=calcStreak(readings);
+    section.querySelector('.metric-streak').textContent=streak>0?streak+(streak===1?' día':' días'):'—';
   }
 
-  // ---------- Data fetching ----------
   async function fetchAutoReadings(tweetId){
     try{
       var resp=await fetch(API_BASE+'/api/get-readings?id='+encodeURIComponent(tweetId));
@@ -510,7 +485,6 @@ details summary::-webkit-details-marker{display:none;}
     return sortR(auto.concat(manual));
   }
 
-  // ---------- Tabs ----------
   function setupTabs(section){
     var btns=section.querySelectorAll('.tab-btn'),panels=section.querySelectorAll('.tab-panel');
     btns.forEach(function(btn){
@@ -522,7 +496,6 @@ details summary::-webkit-details-marker{display:none;}
     });
   }
 
-  // ---------- Time input ----------
   function populateTimeSelect(sel,preset){
     sel.innerHTML='';
     for(var h=0;h<24;h++){[0,30].forEach(function(m){
@@ -532,7 +505,6 @@ details summary::-webkit-details-marker{display:none;}
     });}
   }
 
-  // ---------- Section setup ----------
   async function renderTweetSection(tweet,container){
     var tpl=document.getElementById('tweet-section-template');
     var section=tpl.content.firstElementChild.cloneNode(true);
@@ -545,7 +517,6 @@ details summary::-webkit-details-marker{display:none;}
     setupTabs(section);
 
     sectionState[tweet.id]={range:'30d',granularity:'hourly',customStart:null,customEnd:null};
-
     section.querySelector('.input-date').value=todayVal();
     populateTimeSelect(section.querySelector('.input-time'),roundedHalf());
 
@@ -567,31 +538,28 @@ details summary::-webkit-details-marker{display:none;}
       updateChart();
     }
 
-    // Range & granularity selects
     section.querySelector('.select-range').addEventListener('change',function(){
       var val=this.value;
       sectionState[tweet.id].range=val;
-      var customInputs=section.querySelector('.custom-range-inputs');
-      customInputs.style.display=val==='custom'?'inline-flex':'none';
+      section.querySelector('.custom-range-inputs').style.display=val==='custom'?'inline-flex':'none';
       if(val!=='custom') updateChart();
     });
     section.querySelector('.select-granularity').addEventListener('change',function(){
       sectionState[tweet.id].granularity=this.value;
       updateChart();
     });
-    var startInp=section.querySelector('.range-start'),endInp=section.querySelector('.range-end');
-    [startInp,endInp].forEach(function(inp){
+    var si=section.querySelector('.range-start'),ei=section.querySelector('.range-end');
+    [si,ei].forEach(function(inp){
       inp.addEventListener('change',function(){
-        sectionState[tweet.id].customStart=startInp.value;
-        sectionState[tweet.id].customEnd=endInp.value;
-        if(startInp.value&&endInp.value) updateChart();
+        sectionState[tweet.id].customStart=si.value;
+        sectionState[tweet.id].customEnd=ei.value;
+        if(si.value&&ei.value) updateChart();
       });
     });
 
     await refresh();
     setInterval(refresh,AUTO_REFRESH_MS);
 
-    // Manual form
     section.querySelector('.add-reading-form').addEventListener('submit',async function(e){
       e.preventDefault();
       var err=section.querySelector('.form-error');err.style.display='none';
